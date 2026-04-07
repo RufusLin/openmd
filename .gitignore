@@ -1,0 +1,39 @@
+# Python .gitignore
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg-info/
+*.egg
+*.so
+*.dll
+*.exe
+*.so
+*.o
+*.a
+*.lib
+*.dylib
+*.pyd
+*.class
+*.pyc
+*.pyo
+*.pyd
+*.so
+*.dll
+*.exe
+*.so
+*.dylib
+*.pyd
+# Virtual envs
+venv/
+env/
+ENV/
+.venv/
+# IDEs and editors
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+# OS files
+.DS_Store
+Thumbs.db
