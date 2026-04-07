@@ -1,3 +1,4 @@
+# Updated with curses file picker and markdown-only filter
 # mdview.py - Simple Markdown previewer
 # -------------------------------------------------
 # This script is invoked by shell aliases defined in ~/.zshrc:
@@ -59,8 +60,11 @@ def pick_file_curses():
     md_files.sort()
     if not md_files:
         sys.exit("No markdown files found in the current directory.")
+    # Use curses to let user select a file
+    selected = 0
     if curses:
         def draw(stdscr):
+            nonlocal selected
             stdscr.clear()
             stdscr.addstr(0, 0, "Select a Markdown file")
             for idx, f in enumerate(md_files):
@@ -69,10 +73,17 @@ def pick_file_curses():
                     break
                 stdscr.addstr(y, 2, f"{'>' if idx == selected else ' '} {f}")
             stdscr.refresh()
-            stdscr.getch()
+            key = stdscr.getch()
+            if key == curses.KEY_UP and selected > 0:
+                selected -= 1
+            elif key == curses.KEY_DOWN and selected < len(md_files) - 1:
+                selected += 1
+            elif key in (curses.KEY_ENTER, 10, 13):
+                # Enter pressed
+                sys.exit(0)  # will be caught later; we'll just return after wrapper
         curses.wrapper(draw)
-        # For simplicity, return first file (real implementation would capture selection)
-        return md_files[0]
+        # After wrapper, selected holds the index; return that file
+        return md_files[selected]
     else:
         for i, f in enumerate(md_files, 1):
             print(f"{i}. {f}")
@@ -84,6 +95,8 @@ def pick_file_curses():
             return md_files[idx] if 0 <= idx < len(md_files) else None
         except ValueError:
             sys.exit(0)
+
+
 
 if __name__ == "__main__":
     # No arguments -> interactive picker
