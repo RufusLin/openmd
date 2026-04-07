@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.2.0
+# Version: 1.2.1
 # Updated with curses file picker and markdown-only filter
 # mdview.py - Simple Markdown previewer
 # -------------------------------------------------
@@ -79,7 +79,8 @@ def pick_file_curses():
             elif key == curses.KEY_DOWN and selected < len(md_files) - 1:
                 selected += 1
             elif key in (curses.KEY_ENTER, 10, 13):
-                sys.exit(0)   # will be caught below
+                # selection made; exit draw function to let wrapper return
+                return
         try:
             curses.wrapper(draw)
         except SystemExit:
