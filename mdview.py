@@ -78,8 +78,7 @@ def pick_file_curses():
             elif key == curses.KEY_DOWN and selected < len(md_files) - 1:
                 selected += 1
             elif key in (curses.KEY_ENTER, 10, 13):
-                # Exit wrapper with selected index
-                sys.exit(0)
+                sys.exit(0)   # will be caught below
         try:
             curses.wrapper(draw)
         except SystemExit:
@@ -101,7 +100,7 @@ def pick_file_curses():
     return md_files[selected]
 
 if __name__ == "__main__":
-    # No arguments -> interactive picker
+    # No arguments → interactive picker
     if len(sys.argv) < 2:
         file_path = pick_file_curses()
         md_files = [file_path]
@@ -114,27 +113,38 @@ if __name__ == "__main__":
             sys.exit("No markdown files matched the given pattern(s).")
         # Limit to 6 files
         if len(md_files) > 6:
-            sys.stderr.write("Warning: more than 6 files supplied; showing first 6.\\n")
+            sys.stderr.write("Warning: more than 6 files supplied; showing first 6.\n")
             md_files = md_files[:6]
-    # Create tabbed window
-    app = QApplication(sys.argv)
-    tab_widget = QTabWidget()
-    for f in md_files:
-        tab = QWidget()
-        view = QWebEngineView()
-        try:
-            with open(f, 'r', encoding='utf-8') as file_obj:
-                content = file_obj.read()
-                html_body = markdown.markdown(content, extensions=['extra', 'sane_lists'])
-        except Exception as e:
-            html_body = f"<h1>Error</h1><p>{str(e)}</p>"
-        full_html = f"<html><head><style>{CSS}</style></head><body>{html_body}</body></html>"
-        view.setHtml(full_html)
-        tab_layout = QVBoxLayout()
-        tab_layout.addWidget(view)
-        tab.setLayout(tab_layout)
-        tab_widget.addTab(tab, os.path.basename(f))
-    tab_widget.setWindowTitle("MD Preview")
-    tab_widget.resize(QSize(1000, 1100))
-    tab_widget.show()
-    sys.exit(app.exec())
+
+    # -----------------------------------------------------------------
+    # Build the tabbed window – wrapped in a top-level try/except so we
+    # can report any unexpected error (e.g. a file that cannot be opened)
+    # -----------------------------------------------------------------
+    try:
+        app = QApplication(sys.argv)
+        tab_widget = QTabWidget()
+        for f in md_files:
+            tab = QWidget()
+            view = QWebEngineView()
+            try:
+                with open(f, 'r', encoding='utf-8') as file_obj:
+                    content = file_obj.read()
+                    html_body = markdown.markdown(content, extensions=['extra', 'sane_lists'])
+            except Exception as e:
+                # Show the exact path that failed – this will appear in the UI
+                html_body = f"<h1>Error loading {os.path.basename(f)}</h1><p>{type(e).__name__}: {e}</p>"
+            full_html = f"<html><head><style>{CSS}</style></head><body>{html_body}</body></html>"
+            view.setHtml(full_html)
+            tab_layout = QVBoxLayout()
+            tab_layout.addWidget(view)
+            tab.setLayout(tab_layout)
+            tab_widget.addTab(tab, os.path.basename(f))
+        tab_widget.setWindowTitle("MD Preview")
+        tab_widget.resize(QSize(1000, 1100))
+        tab_widget.show()
+        sys.exit(app.exec())
+    except Exception as e:
+        # If something goes wrong *after* the loop (e.g. Qt init failure),
+        # we still want to tell the user what happened.
+        sys.stderr.write(f"Fatal error while building the preview window: {type(e).__name__}: {e}\n")
+        sys.exit(1)
