@@ -35,7 +35,7 @@ except Exception:
 
 from PySide6.QtWidgets import QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QSize
+from PySide6.QtCore import QSize, Qt
 
 # GitHub-Modern Dark Theme
 CSS = """body { 
@@ -52,6 +52,21 @@ table th, table td { border: 1px solid #30363d; padding: 8px 12px; }
 table tr:nth-child(even) { background-color: #161b22; }
 """
 
+class MDPreviewWindow(QMainWindow):
+    def __init__(self, tab_widget):
+        super().__init__()
+        self.setCentralWidget(tab_widget)
+        self.setWindowTitle("MD Preview")
+        self.resize(QSize(1000, 1100))
+        self.tab_widget = tab_widget
+        self.keyPressEvent = self._keyPressEvent
+
+    def keyPressEvent(self, event):
+        if event.key() == Qt.Key_Escape:
+            QApplication.quit()
+        else:
+            super().keyPressEvent(event)
+
 def is_markdown(path):
     return path.lower().endswith('.md')
 
@@ -66,6 +81,8 @@ def pick_file_curses():
         def draw(stdscr):
             nonlocal selected
             stdscr.clear()
+            stdscr.keypad(True)
+            stdscr.keypad(True)
             stdscr.addstr(0, 0, "Select a Markdown file")
             for idx, f in enumerate(md_files):
                 y = 2 + idx
