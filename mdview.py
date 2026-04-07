@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Version: 1.2.0
 # Updated with curses file picker and markdown-only filter
 # mdview.py - Simple Markdown previewer
 # -------------------------------------------------
