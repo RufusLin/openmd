@@ -167,16 +167,21 @@ class FilePreviewWidget(QWidget):
                 self._add_toc_item(sub_li, item)
 
     def _render_markdown(self, file_path: str):
-        """Read and render a markdown file; return (html_body, toc_html)."""
+        """Read and render a markdown file; return (html_body, toc_html).
+
+        Uses the Markdown class directly so we can access md.toc, which is the
+        only reliable way to get the TOC HTML — the markdown.markdown() one-liner
+        does NOT generate the <div class='toc'> block.
+        """
         try:
             with open(file_path, 'r', encoding='utf-8') as fh:
                 raw = fh.read()
-            html_body = markdown.markdown(raw, extensions=['extra', 'sane_lists'])
-            toc_html = markdown.markdown(
-                raw,
+            md = markdown.Markdown(
                 extensions=['toc', 'extra', 'sane_lists'],
                 extension_configs={'toc': {'permalink': False, 'anchorlink': True}},
             )
+            html_body = md.convert(raw)
+            toc_html = md.toc  # e.g. '<div class="toc"><ul>...</ul></div>'
         except Exception as e:
             html_body = f"<h1>Error loading {os.path.basename(file_path)}</h1><p>{type(e).__name__}: {e}</p>"
             toc_html = ""
