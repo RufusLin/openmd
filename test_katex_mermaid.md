@@ -1,4 +1,4 @@
-# KaTeX & Mermaid Test
+# KaTeX & Mermaid Testing
 
 ## KaTeX Math
 
