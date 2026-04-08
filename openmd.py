@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.0
+# Version: 1.4.2
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -39,8 +39,9 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QSplitter, QTreeWidget, QTreeWidgetItem, QPushButton,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QSize, Qt, QFileSystemWatcher
-from PySide6.QtGui import QKeyEvent, QColor
+from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl
+from PySide6.QtGui import QKeyEvent, QColor, QDesktopServices
+from PySide6.QtWebEngineCore import QWebEnginePage
 from bs4 import BeautifulSoup
 
 # GitHub-Modern Dark Theme (built-in defaults)
@@ -156,6 +157,26 @@ def _set_saved_theme(cfg: configparser.ConfigParser, theme: str):
     _save_config(cfg)
 
 
+class _OpenMDPage(QWebEnginePage):
+    """Custom QWebEnginePage that opens http/https links in the system browser.
+
+    Any navigation to an external URL (http/https) is intercepted and handed
+    off to QDesktopServices.openUrl() so it opens in the user's default browser.
+    The Qt window itself never navigates away from the rendered markdown.
+    All other schemes (data:, file:, about:) are allowed through normally.
+    """
+
+    def acceptNavigationRequest(self, url, nav_type, is_main_frame):
+        scheme = url.scheme()
+        if scheme in ('http', 'https'):
+            try:
+                QDesktopServices.openUrl(url)
+            except Exception:
+                pass
+            return False  # block in-window navigation regardless
+        return True  # allow file://, data:, about:blank, anchor jumps, etc.
+
+
 class _SidebarTree(QTreeWidget):
     """QTreeWidget that fires itemClicked when Return/Enter is pressed."""
 
@@ -227,8 +248,12 @@ class FilePreviewWidget(QWidget):
 
         # --- Web view ---
         self.view = QWebEngineView()
+        self.view.setPage(_OpenMDPage(self.view))  # intercept external links
         self.view.loadFinished.connect(self._on_load_finished)
-        self.view.setHtml(full_html)
+        self._base_url = QUrl.fromLocalFile(
+            os.path.dirname(os.path.abspath(file_path)) + os.sep
+        )
+        self.view.setHtml(full_html, self._base_url)
 
         # --- Live reload ---
         self.watcher = QFileSystemWatcher(self)
@@ -387,7 +412,7 @@ class FilePreviewWidget(QWidget):
         html_body, toc_html = self._render_markdown(self.file_path)
         self.sidebar.clear()
         self._populate_sidebar(toc_html)
-        self.view.setHtml(self._build_html(html_body))
+        self.view.setHtml(self._build_html(html_body), self._base_url)
 
     def _jump_to_section(self, item: QTreeWidgetItem):
         """Scroll the web view to the heading whose anchor matches the clicked item."""

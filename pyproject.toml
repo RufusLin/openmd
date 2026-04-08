@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmd"
-version = "1.4.1"
+version = "1.4.2"
 description = "Fast Markdown previewer with GitHub-dark theme, sidebar TOC, multi-file tabs, and .openmd.css theming"
 readme = "README.md"
 license = { text = "MIT" }
