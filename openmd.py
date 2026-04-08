@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.5
+# Version: 1.4.6
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -41,7 +41,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl
 from PySide6.QtGui import QKeyEvent, QColor, QDesktopServices
-from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
+from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings, QWebEngineProfile
 from bs4 import BeautifulSoup
 
 # GitHub-Modern Dark Theme (built-in defaults)
@@ -249,7 +249,11 @@ class FilePreviewWidget(QWidget):
         # --- Web view ---
         self.view = QWebEngineView()
         self.view.setPage(_OpenMDPage(self.view))  # intercept external links
-        # Allow local file:// pages to load remote https:// images
+        # Allow local file:// pages to load remote https:// images.
+        # Must be set on both the profile and the view settings to take effect.
+        QWebEngineProfile.defaultProfile().settings().setAttribute(
+            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
+        )
         self.view.settings().setAttribute(
             QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
         )
