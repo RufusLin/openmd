@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.3.4
+# Version: 1.4.0
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -26,7 +26,7 @@
 # performed inside the Python code.
 # -------------------------------------------------
 
-import sys, os, markdown
+import sys, os, re, markdown, configparser
 
 # Try to import curses for file picker; fallback to simple list
 try:
@@ -36,11 +36,11 @@ except Exception:
 
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout,
-    QSplitter, QTreeWidget, QTreeWidgetItem,
+    QHBoxLayout, QSplitter, QTreeWidget, QTreeWidgetItem, QPushButton,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QEvent
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import QSize, Qt, QFileSystemWatcher
+from PySide6.QtGui import QKeyEvent, QColor
 from bs4 import BeautifulSoup
 
 # GitHub-Modern Dark Theme (built-in defaults)
@@ -59,6 +59,20 @@ table th, table td { border: 1px solid #30363d; padding: 8px 12px; }
 table tr:nth-child(even) { background-color: #161b22; }
 h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: inherit; text-decoration: none; }
 """
+
+# Sidebar Qt stylesheet
+SIDEBAR_CSS = """
+QTreeWidget {
+    background: #161b22;
+    color: #c9d1d9;
+    border-right: 1px solid #30363d;
+    font-size: 13px;
+}
+QTreeWidget::item:hover { background: #212730; }
+QTreeWidget::item:selected { background: #1f6feb; color: #ffffff; }
+"""
+
+CONFIG_PATH = os.path.expanduser('~/.openmd.config')
 
 
 def _load_user_css() -> str:
@@ -81,8 +95,69 @@ def _load_user_css() -> str:
                 pass
     return ''
 
+
+def _parse_themes(css_text: str) -> list[tuple[str, str]]:
+    """Return up to 16 (theme_name, bg_color) tuples parsed from body.theme-xxx rules.
+
+    Scans for patterns like:
+        body.theme-foo { ... background-color: #rrggbb; ... }
+    Returns themes in the order they appear in the CSS.
+    Skips any block that is malformed or missing a background-color.
+    Caps at 16 themes to keep the swatch bar compact.
+    """
+    themes = []
+    seen = set()
+    try:
+        block_re = re.compile(
+            r'body\.theme-([\w-]+)\s*\{([^}]*)\}', re.DOTALL
+        )
+        bg_re = re.compile(r'background-color\s*:\s*([^;]+);')
+        for m in block_re.finditer(css_text):
+            if len(themes) >= 16:
+                break
+            try:
+                name = m.group(1).strip()
+                if not name or name in seen:
+                    continue
+                seen.add(name)
+                bg_match = bg_re.search(m.group(2))
+                if not bg_match:
+                    continue  # skip themes with no background-color
+                bg = bg_match.group(1).strip()
+                if not bg:
+                    continue
+                themes.append((name, bg))
+            except Exception:
+                continue  # skip malformed individual block
+    except Exception:
+        pass  # return whatever was collected before the error
+    return themes
+
+
+def _load_config() -> configparser.ConfigParser:
+    cfg = configparser.ConfigParser()
+    cfg.read(CONFIG_PATH, encoding='utf-8')
+    return cfg
+
+
+def _save_config(cfg: configparser.ConfigParser):
+    with open(CONFIG_PATH, 'w', encoding='utf-8') as f:
+        cfg.write(f)
+
+
+def _get_saved_theme(cfg: configparser.ConfigParser) -> str:
+    return cfg.get('display', 'theme', fallback='')
+
+
+def _set_saved_theme(cfg: configparser.ConfigParser, theme: str):
+    if not cfg.has_section('display'):
+        cfg.add_section('display')
+    cfg.set('display', 'theme', theme)
+    _save_config(cfg)
+
+
 class _SidebarTree(QTreeWidget):
-    """QTreeWidget that fires item_return_pressed when Return/Enter is pressed."""
+    """QTreeWidget that fires itemClicked when Return/Enter is pressed."""
 
     def keyPressEvent(self, event: QKeyEvent):
         if event.key() in (Qt.Key_Return, Qt.Key_Enter):
@@ -91,19 +166,6 @@ class _SidebarTree(QTreeWidget):
                 self.itemClicked.emit(item, 0)
         else:
             super().keyPressEvent(event)
-
-
-# Sidebar CSS injected into the preview HTML
-SIDEBAR_CSS = """
-QTreeWidget {
-    background: #161b22;
-    color: #c9d1d9;
-    border-right: 1px solid #30363d;
-    font-size: 13px;
-}
-QTreeWidget::item:hover { background: #212730; }
-QTreeWidget::item:selected { background: #1f6feb; color: #ffffff; }
-"""
 
 
 # ---------------------------------------------------------------------------
@@ -117,12 +179,13 @@ QTreeWidget::item:selected { background: #1f6feb; color: #ffffff; }
 class FilePreviewWidget(QWidget):
     """A single-file preview pane: left sidebar TOC + right HTML view."""
 
-    def __init__(self, file_path: str):
+    def __init__(self, file_path: str, shared_config: configparser.ConfigParser):
         super().__init__()
         self.file_path = file_path
+        self.cfg = shared_config
+        self._current_theme = _get_saved_theme(self.cfg)
 
-        # KaTeX CDN snippets — loaded synchronously in the HTML head/body
-        # KaTeX renders fine via inline scripts in Qt WebEngine setHtml()
+        # KaTeX CDN snippets
         self._katex_css = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">'
         self._katex_script = (
             '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>\n'
@@ -134,9 +197,7 @@ class FilePreviewWidget(QWidget):
             '});});'
             '</script>'
         )
-        # Mermaid: Qt WebEngine setHtml() does not reliably fire window.onload or
-        # DOMContentLoaded for CDN scripts. Instead we load the script in the HTML
-        # and trigger mermaid.run() via page().runJavaScript() on the loadFinished signal.
+        # Mermaid: triggered via loadFinished + runJavaScript
         self._mermaid_script = '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>'
 
         # --- Load and render markdown ---
@@ -144,43 +205,80 @@ class FilePreviewWidget(QWidget):
         full_html = self._build_html(html_body)
 
         # --- Sidebar (QTreeWidget) ---
-        # Collapsible TOC: H1 → top-level, H2 → children, H3 → grandchildren.
-        # Arrow keys navigate; Enter jumps to the heading; Esc closes the window.
-        # DO NOT remove this sidebar — it is the primary navigation feature.
         self.sidebar = _SidebarTree()
         self.sidebar.setHeaderHidden(True)
         self.sidebar.setIndentation(16)
         self.sidebar.setStyleSheet(SIDEBAR_CSS)
         self.sidebar.setFixedWidth(220)
         self.sidebar.itemClicked.connect(self._jump_to_section)
-        # Return/Enter key is handled by _SidebarTree.keyPressEvent above,
-        # which re-emits itemClicked so _jump_to_section is called.
         self._populate_sidebar(toc_html)
+
+        # --- Theme swatch bar at the foot of the sidebar ---
+        self._swatch_bar = self._build_swatch_bar()
+
+        # --- Sidebar column: tree + swatch bar ---
+        sidebar_col = QWidget()
+        sidebar_col.setFixedWidth(220)
+        sidebar_layout = QVBoxLayout(sidebar_col)
+        sidebar_layout.setContentsMargins(0, 0, 0, 0)
+        sidebar_layout.setSpacing(0)
+        sidebar_layout.addWidget(self.sidebar)
+        sidebar_layout.addWidget(self._swatch_bar)
 
         # --- Web view ---
         self.view = QWebEngineView()
-        # Connect loadFinished to trigger Mermaid rendering after the page and CDN
-        # scripts have fully loaded. This is the only reliable way to run Mermaid
-        # in Qt WebEngine when content is set via setHtml().
         self.view.loadFinished.connect(self._on_load_finished)
         self.view.setHtml(full_html)
 
-        # --- Live reload: single watcher per file, connected to _reload ---
-        # DO NOT create a second QFileSystemWatcher — one per FilePreviewWidget only.
+        # --- Live reload ---
         self.watcher = QFileSystemWatcher(self)
         self.watcher.addPath(self.file_path)
         self.watcher.fileChanged.connect(self._reload)
 
         # --- Layout: sidebar left, preview right ---
         splitter = QSplitter(Qt.Horizontal)
-        splitter.addWidget(self.sidebar)
+        splitter.addWidget(sidebar_col)
         splitter.addWidget(self.view)
-        splitter.setStretchFactor(0, 0)   # sidebar: fixed
-        splitter.setStretchFactor(1, 1)   # preview: stretches
+        splitter.setStretchFactor(0, 0)
+        splitter.setStretchFactor(1, 1)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
+
+    def _build_swatch_bar(self) -> QWidget:
+        """Build a row of colour swatches, one per theme found in .openmd.css."""
+        user_css = _load_user_css()
+        self._themes = _parse_themes(user_css)  # [(name, bg_color), ...]
+
+        bar = QWidget()
+        bar.setStyleSheet("background: #0d1117; border-top: 1px solid #30363d;")
+        layout = QHBoxLayout(bar)
+        layout.setContentsMargins(6, 4, 6, 4)
+        layout.setSpacing(4)
+
+        for name, bg in self._themes:
+            btn = QPushButton()
+            btn.setFixedSize(18, 18)
+            btn.setToolTip(name.replace('-', ' ').title())
+            # Determine a border colour: slightly lighter than bg for contrast
+            btn.setStyleSheet(
+                f"QPushButton {{ background-color: {bg}; border: 1px solid #555; border-radius: 3px; }}"
+                f"QPushButton:hover {{ border: 2px solid #aaa; }}"
+            )
+            btn.clicked.connect(lambda checked, n=name: self._apply_theme(n))
+            layout.addWidget(btn)
+
+        layout.addStretch()
+        return bar
+
+    def _apply_theme(self, theme_name: str):
+        """Apply a theme by setting a class on <body> via JavaScript."""
+        self._current_theme = theme_name
+        _set_saved_theme(self.cfg, theme_name)
+        self.view.page().runJavaScript(
+            f"document.body.className = 'theme-{theme_name}';"
+        )
 
     def _populate_sidebar(self, toc_html: str):
         """Parse the TOC div from markdown-with-toc output and fill the QTreeWidget."""
@@ -190,7 +288,6 @@ class FilePreviewWidget(QWidget):
         toc_div = soup.find("div", class_="toc")
         if not toc_div:
             return
-        # Top-level <ul> inside the TOC div
         top_ul = toc_div.find("ul", recursive=False)
         if top_ul:
             for li in top_ul.find_all("li", recursive=False):
@@ -215,18 +312,12 @@ class FilePreviewWidget(QWidget):
         else:
             parent_item.addChild(item)
 
-        # Recurse into nested <ul> for sub-headings
         for child_ul in node.find_all("ul", recursive=False):
             for sub_li in child_ul.find_all("li", recursive=False):
                 self._add_toc_item(sub_li, item)
 
     def _render_markdown(self, file_path: str):
-        """Read and render a markdown file; return (html_body, toc_html).
-
-        Uses the Markdown class directly so we can access md.toc, which is the
-        only reliable way to get the TOC HTML — the markdown.markdown() one-liner
-        does NOT generate the <div class='toc'> block.
-        """
+        """Read and render a markdown file; return (html_body, toc_html)."""
         try:
             with open(file_path, 'r', encoding='utf-8') as fh:
                 raw = fh.read()
@@ -235,45 +326,33 @@ class FilePreviewWidget(QWidget):
                 extension_configs={'toc': {'permalink': False, 'anchorlink': True}},
             )
             html_body = md.convert(raw)
-            toc_html = md.toc  # e.g. '<div class="toc"><ul>...</ul></div>'
-            # Convert markdown-rendered mermaid code blocks to the format Mermaid v10 expects.
-            # The markdown library renders ```mermaid as <pre><code class="language-mermaid">...
-            # but Mermaid.run() looks for <pre class="mermaid">...</pre>.
-            # Use BeautifulSoup to do this safely without affecting other code blocks.
+            toc_html = md.toc
             soup = BeautifulSoup(html_body, 'html.parser')
             for code_tag in soup.find_all('code', class_='language-mermaid'):
                 pre_tag = code_tag.parent
                 if pre_tag and pre_tag.name == 'pre':
-                    # Replace <pre><code class="language-mermaid">...</code></pre>
-                    # with <pre class="mermaid">...</pre>
                     new_pre = soup.new_tag('pre', **{'class': 'mermaid'})
                     new_pre.string = code_tag.get_text()
                     pre_tag.replace_with(new_pre)
             html_body = str(soup)
         except Exception as e:
-            html_body = f"<h1>Error loading {os.path.basename(file_path)}</h1><p>{type(e).__name__}: {e}</p>"
+            html_body = f"<pre>Error loading file: {e}</pre>"
             toc_html = ""
         return html_body, toc_html
 
     def _build_html(self, html_body: str) -> str:
-        """Wrap rendered markdown body with CSS, Mermaid, and KaTeX.
-
-        Built-in CSS defaults come first; user .openmd.css (if found) is appended
-        so its rules win via normal CSS cascade without replacing the defaults.
-        """
+        """Wrap rendered markdown body with CSS, Mermaid, and KaTeX."""
         user_css = _load_user_css()
         combined_css = CSS + ('\n/* .openmd.css */\n' + user_css if user_css else '')
+        # If a theme is active, pre-apply it so the page loads with the right theme
+        body_class = f' class="theme-{self._current_theme}"' if self._current_theme else ''
         return (
             f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{combined_css}</style>{self._katex_css}</head>"
-            f"<body>{html_body}{self._mermaid_script}{self._katex_script}</body></html>"
+            f"<body{body_class}>{html_body}{self._mermaid_script}{self._katex_script}</body></html>"
         )
 
     def _on_load_finished(self, ok: bool):
-        """Called by loadFinished signal after setHtml() completes.
-
-        Triggers Mermaid rendering via runJavaScript — the only reliable way
-        to run CDN-loaded Mermaid in Qt WebEngine after setHtml().
-        """
+        """Trigger Mermaid rendering after page load."""
         if ok:
             self.view.page().runJavaScript(
                 "if(window.mermaid){"
@@ -284,8 +363,6 @@ class FilePreviewWidget(QWidget):
 
     def _reload(self, _path: str = ""):
         """Called by QFileSystemWatcher when the watched file changes."""
-        # Re-add path: some editors (vim, neovim) replace the file atomically,
-        # which removes it from the watcher. Re-adding ensures continued watching.
         self.watcher.addPath(self.file_path)
         html_body, toc_html = self._render_markdown(self.file_path)
         self.sidebar.clear()
@@ -343,7 +420,7 @@ def pick_file_curses() -> str:
         def draw(stdscr):
             nonlocal selected
             stdscr.keypad(True)
-            curses.curs_set(0)  # hide cursor
+            curses.curs_set(0)
             while True:
                 stdscr.clear()
                 stdscr.addstr(0, 0, "Select a Markdown file (\u2191\u2193 navigate, Enter select, Esc quit)")
@@ -360,7 +437,7 @@ def pick_file_curses() -> str:
                     selected += 1
                 elif key in (curses.KEY_ENTER, 10, 13):
                     return
-                elif key == 27:  # Esc
+                elif key == 27:
                     sys.exit(0)
         try:
             curses.wrapper(draw)
@@ -391,33 +468,24 @@ def pick_file_curses() -> str:
 
 def main():
     """Entry point — used both by direct invocation and by the pip console script."""
-    # No arguments → interactive curses picker
     if len(sys.argv) < 2:
         file_path = pick_file_curses()
         md_files = [file_path]
     else:
-        # Collect all arguments (shell may have expanded globs)
         files = sys.argv[1:]
-        # Filter to markdown files only
         md_files = [f for f in files if is_markdown(f)]
         if not md_files:
             sys.exit("No markdown files matched the given pattern(s).")
-        # Limit to 6 files (one tab per file)
         if len(md_files) > 6:
             sys.stderr.write("Warning: more than 6 files supplied; showing first 6.\n")
             md_files = md_files[:6]
 
-    # -----------------------------------------------------------------
-    # Build the tabbed window.
-    # Each file gets its own tab containing a FilePreviewWidget (sidebar
-    # TOC + web view). The QTabWidget is intentional — DO NOT remove it.
-    # Wrapped in a top-level try/except to surface Qt init failures.
-    # -----------------------------------------------------------------
     try:
         app = QApplication(sys.argv)
+        cfg = _load_config()
         tab_widget = QTabWidget()
         for f in md_files:
-            widget = FilePreviewWidget(f)
+            widget = FilePreviewWidget(f, cfg)
             tab_widget.addTab(widget, os.path.basename(f))
         window = MDPreviewWindow(tab_widget)
         window.show()
