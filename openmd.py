@@ -48,47 +48,6 @@ CSS = """body {
     line-height: 1.6; color: #c9d1d9; max-width: 900px; margin: auto; padding: 2rem; background-color: #0d1117; 
 }
 
-h1 a, h2 a, h3 a, h4 a, h5 a, h6 a, a {
-    color: #bdffcc;
-    text-decoration: none;
-}
-
-h1, h2, h3, h4, h5, h6 {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    font-weight: 600;
-    line-height: 1.25;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-    color: #daf0f8;           /* matches your body text color */
-}
-
-h1 {
-    font-size: 2.25em;
-    border-bottom: 2px solid #30363d;
-    padding-bottom: 0.5rem;
-}
-
-h2 {
-    font-size: 1.75em;
-}
-
-h3 {
-    font-size: 1.4em;
-}
-
-h4 {
-    font-size: 1.2em;
-}
-
-h5 {
-    font-size: 1.1em;
-}
-
-h6 {
-    font-size: 1em;
-    color: #8b949e;           /* slightly dimmer for lower levels */
-}
-
 pre { 
     background-color: #161b22; padding: 16px; border-radius: 6px; border: 1px solid #30363d;
     overflow: auto; font-family: "SFMono-Regular", Consolas, monospace; 
