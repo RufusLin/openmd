@@ -117,6 +117,7 @@ class FilePreviewWidget(QWidget):
         self.sidebar.setStyleSheet(SIDEBAR_CSS)
         self.sidebar.setFixedWidth(220)
         self.sidebar.itemClicked.connect(self._jump_to_section)
+        self.sidebar.itemActivated.connect(self._jump_to_section)  # Return/Enter key
         self._populate_sidebar(toc_html)
 
         # --- Web view ---
