@@ -198,6 +198,20 @@ class FilePreviewWidget(QWidget):
             )
             html_body = md.convert(raw)
             toc_html = md.toc  # e.g. '<div class="toc"><ul>...</ul></div>'
+            # Convert markdown-rendered mermaid code blocks to the format Mermaid v10 expects.
+            # The markdown library renders ```mermaid as <pre><code class="language-mermaid">...
+            # but Mermaid.run() looks for <pre class="mermaid">...</pre>.
+            # Use BeautifulSoup to do this safely without affecting other code blocks.
+            soup = BeautifulSoup(html_body, 'html.parser')
+            for code_tag in soup.find_all('code', class_='language-mermaid'):
+                pre_tag = code_tag.parent
+                if pre_tag and pre_tag.name == 'pre':
+                    # Replace <pre><code class="language-mermaid">...</code></pre>
+                    # with <pre class="mermaid">...</pre>
+                    new_pre = soup.new_tag('pre', **{'class': 'mermaid'})
+                    new_pre.string = code_tag.get_text()
+                    pre_tag.replace_with(new_pre)
+            html_body = str(soup)
         except Exception as e:
             html_body = f"<h1>Error loading {os.path.basename(file_path)}</h1><p>{type(e).__name__}: {e}</p>"
             toc_html = ""
