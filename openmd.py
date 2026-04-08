@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.7
+# Version: 1.4.8
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -386,18 +386,22 @@ class FilePreviewWidget(QWidget):
         LocalContentCanAccessRemoteUrls. This workaround fetches remote images
         once, caches them by URL hash in tempfile.gettempdir(), and rewrites
         the <img src> to a local file:// path so Qt can display them.
+        Uses BeautifulSoup for robust attribute parsing (handles all quote styles
+        and HTML-encoded URLs).
         """
         cache_dir = os.path.join(tempfile.gettempdir(), 'openmd_img_cache')
         os.makedirs(cache_dir, exist_ok=True)
 
-        def replace_src(match):
-            url = match.group(1)
+        soup = BeautifulSoup(html_body, 'html.parser')
+        modified = False
+        for img in soup.find_all('img'):
+            url = img.get('src', '')
             if not url.startswith(('http://', 'https://')):
-                return match.group(0)  # leave local paths unchanged
+                continue
             url_hash = hashlib.md5(url.encode()).hexdigest()
-            # Guess extension from URL, default to .png
-            ext = os.path.splitext(url.split('?')[0])[1] or '.png'
-            if len(ext) > 5:  # sanity check
+            # Guess extension from URL path component, default to .png
+            ext = os.path.splitext(url.split('?')[0])[1]
+            if not ext or len(ext) > 5:
                 ext = '.png'
             cached_path = os.path.join(cache_dir, url_hash + ext)
             if not os.path.exists(cached_path):
@@ -407,11 +411,11 @@ class FilePreviewWidget(QWidget):
                         with open(cached_path, 'wb') as f:
                             f.write(resp.read())
                 except Exception:
-                    return match.group(0)  # leave unchanged on error
-            local_url = QUrl.fromLocalFile(cached_path).toString()
-            return f'src="{local_url}"'
+                    continue  # leave src unchanged on error
+            img['src'] = QUrl.fromLocalFile(cached_path).toString()
+            modified = True
 
-        return re.sub(r'src="(https?://[^"]+)"', replace_src, html_body)
+        return str(soup) if modified else html_body
 
     def _build_html(self, html_body: str) -> str:
         """Wrap rendered markdown body with CSS, Mermaid, and KaTeX.
