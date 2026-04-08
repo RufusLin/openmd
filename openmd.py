@@ -262,7 +262,8 @@ def pick_file_curses() -> str:
 # Entry point
 # ---------------------------------------------------------------------------
 
-if __name__ == "__main__":
+def main():
+    """Entry point — used both by direct invocation and by the pip console script."""
     # No arguments → interactive curses picker
     if len(sys.argv) < 2:
         file_path = pick_file_curses()
@@ -297,3 +298,7 @@ if __name__ == "__main__":
     except Exception as e:
         sys.stderr.write(f"Fatal error while building the preview window: {type(e).__name__}: {e}\n")
         sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
