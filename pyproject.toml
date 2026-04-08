@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmd"
-version = "1.4.2"
+version = "1.4.3"
 description = "Fast Markdown previewer with GitHub-dark theme, sidebar TOC, multi-file tabs, and .openmd.css theming"
 readme = "README.md"
 license = { text = "MIT" }
@@ -40,3 +40,6 @@ Issues = "https://github.com/RufusLin/openmd/issues"
 
 [tool.setuptools]
 py-modules = ["openmd"]
+
+[tool.setuptools.data-files]
+"" = ["openmd-default.css"]
