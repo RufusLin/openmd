@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.6
+# Version: 1.4.7
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -26,7 +26,8 @@
 # performed inside the Python code.
 # -------------------------------------------------
 
-import sys, os, re, markdown, configparser
+import sys, os, re, markdown, configparser, hashlib, tempfile
+import urllib.request
 
 # Try to import curses for file picker; fallback to simple list
 try:
@@ -378,6 +379,40 @@ class FilePreviewWidget(QWidget):
             toc_html = ""
         return html_body, toc_html
 
+    def _cache_remote_images(self, html_body: str) -> str:
+        """Download remote http/https images to a temp cache dir and rewrite src.
+
+        Qt WebEngine cannot load remote images from a file:// origin even with
+        LocalContentCanAccessRemoteUrls. This workaround fetches remote images
+        once, caches them by URL hash in tempfile.gettempdir(), and rewrites
+        the <img src> to a local file:// path so Qt can display them.
+        """
+        cache_dir = os.path.join(tempfile.gettempdir(), 'openmd_img_cache')
+        os.makedirs(cache_dir, exist_ok=True)
+
+        def replace_src(match):
+            url = match.group(1)
+            if not url.startswith(('http://', 'https://')):
+                return match.group(0)  # leave local paths unchanged
+            url_hash = hashlib.md5(url.encode()).hexdigest()
+            # Guess extension from URL, default to .png
+            ext = os.path.splitext(url.split('?')[0])[1] or '.png'
+            if len(ext) > 5:  # sanity check
+                ext = '.png'
+            cached_path = os.path.join(cache_dir, url_hash + ext)
+            if not os.path.exists(cached_path):
+                try:
+                    req = urllib.request.Request(url, headers={'User-Agent': 'openmd/1.0'})
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        with open(cached_path, 'wb') as f:
+                            f.write(resp.read())
+                except Exception:
+                    return match.group(0)  # leave unchanged on error
+            local_url = QUrl.fromLocalFile(cached_path).toString()
+            return f'src="{local_url}"'
+
+        return re.sub(r'src="(https?://[^"]+)"', replace_src, html_body)
+
     def _build_html(self, html_body: str) -> str:
         """Wrap rendered markdown body with CSS, Mermaid, and KaTeX.
 
@@ -410,6 +445,8 @@ class FilePreviewWidget(QWidget):
         # CSS uses descendant selectors (body.theme-xxx pre, etc.) so body class alone
         # is sufficient — no need to propagate the class to child elements.
         body_class = f' class="theme-{self._current_theme}"' if self._current_theme else ''
+        # Download remote images to local cache so Qt WebEngine can display them
+        html_body = self._cache_remote_images(html_body)
         return (
             f"<!DOCTYPE html><html><head><meta charset='utf-8'>{import_links}"
             f"<style>{combined_css}</style>{self._katex_css}</head>"
