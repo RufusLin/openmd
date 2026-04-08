@@ -249,24 +249,26 @@ def pick_file_curses() -> str:
     if curses:
         def draw(stdscr):
             nonlocal selected
-            stdscr.clear()
             stdscr.keypad(True)
-            stdscr.addstr(0, 0, "Select a Markdown file (↑↓ navigate, Enter select, Esc quit)")
-            for idx, f in enumerate(md_files):
-                y = 2 + idx
-                if y >= curses.LINES - 1:
-                    break
-                stdscr.addstr(y, 2, f"{'>' if idx == selected else ' '} {f}")
-            stdscr.refresh()
-            key = stdscr.getch()
-            if key == curses.KEY_UP and selected > 0:
-                selected -= 1
-            elif key == curses.KEY_DOWN and selected < len(md_files) - 1:
-                selected += 1
-            elif key in (curses.KEY_ENTER, 10, 13):
-                return
-            elif key == 27:  # Esc
-                sys.exit(0)
+            curses.curs_set(0)  # hide cursor
+            while True:
+                stdscr.clear()
+                stdscr.addstr(0, 0, "Select a Markdown file (\u2191\u2193 navigate, Enter select, Esc quit)")
+                for idx, f in enumerate(md_files):
+                    y = 2 + idx
+                    if y >= curses.LINES - 1:
+                        break
+                    stdscr.addstr(y, 2, f"{'>' if idx == selected else ' '} {f}")
+                stdscr.refresh()
+                key = stdscr.getch()
+                if key == curses.KEY_UP and selected > 0:
+                    selected -= 1
+                elif key == curses.KEY_DOWN and selected < len(md_files) - 1:
+                    selected += 1
+                elif key in (curses.KEY_ENTER, 10, 13):
+                    return
+                elif key == 27:  # Esc
+                    sys.exit(0)
         try:
             curses.wrapper(draw)
         except SystemExit:
