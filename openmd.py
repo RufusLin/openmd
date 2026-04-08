@@ -85,49 +85,14 @@ class FilePreviewWidget(QWidget):
         super().__init__()
         self.file_path = file_path
 
+        # Mermaid and KaTeX CDN snippets — loaded on every render (requires internet)
+        self._mermaid_script = '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>\n<script>mermaid.initialize({ startOnLoad: true });</script>'
+        self._katex_css = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">'
+        self._katex_script = '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>\n<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"></script>\n<script>renderMathInElement(document.body);</script>'
+
         # --- Load and render markdown ---
-        try:
-            with open(file_path, 'r', encoding='utf-8') as fh:
-                raw = fh.read()
-            html_body = markdown.markdown(raw, extensions=['extra', 'sane_lists'])
-            # Render a second time with the 'toc' extension to get anchor IDs
-            toc_html = markdown.markdown(
-                raw,
-                extensions=['toc', 'extra', 'sane_lists'],
-                extension_configs={'toc': {'permalink': False, 'anchorlink': True}},
-            )
-        except Exception as e:
-            html_body = f"<h1>Error loading {os.path.basename(file_path)}</h1><p>{type(e).__name__}: {e}</p>"
-            toc_html = ""
-
-        # Set up file watcher for live reload
-        self.watcher = QFileSystemWatcher(self)
-        self.watcher.addPath(self.file_path)
-
-        # Embed Mermaid and KaTeX for diagrams and math
-        mermaid_script = '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>\n<script>mermaid.initialize({ startOnLoad: true });</script>'
-        katex_css = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">'
-        katex_script = '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>\n<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"></script>\n<script>renderMathInElement(document.body);</script>'
-
-        def reload():
-            try:
-                with open(self.file_path, 'r', encoding='utf-8') as fh:
-                    raw = fh.read()
-                html_body = markdown.markdown(raw, extensions=['extra', 'sane_lists'])
-                toc_html = markdown.markdown(
-                    raw,
-                    extensions=['toc', 'extra', 'sane_lists'],
-                    extension_configs={'toc': {'permalink': False, 'anchorlink': True}},
-                )
-            except Exception as e:
-                html_body = f"<h1>Error loading {os.path.basename(self.file_path)}</h1><p>{type(e).__name__}: {e}</p>"
-                toc_html = ""
-            self._populate_sidebar(toc_html)
-            full_html = f"<html><head><style>{CSS}</style>{katex_css}</head><body>{html_body}{mermaid_script}{katex_script}</body></html>"
-            self.view.setHtml(full_html)
-        self.watcher.fileChanged.connect(reload)
-
-        full_html = f"<html><head><style>{CSS}</style>{katex_css}</head><body>{html_body}{mermaid_script}{katex_script}</body></html>"
+        html_body, toc_html = self._render_markdown(file_path)
+        full_html = self._build_html(html_body)
 
         # --- Sidebar (QTreeWidget) ---
         # Collapsible TOC: H1 → top-level, H2 → children, H3 → grandchildren.
@@ -145,10 +110,11 @@ class FilePreviewWidget(QWidget):
         self.view = QWebEngineView()
         self.view.setHtml(full_html)
 
-        # --- Live reload support ---
+        # --- Live reload: single watcher per file, connected to _reload ---
+        # DO NOT create a second QFileSystemWatcher — one per FilePreviewWidget only.
         self.watcher = QFileSystemWatcher(self)
         self.watcher.addPath(self.file_path)
-        self.watcher.fileChanged.connect(self._on_file_changed)
+        self.watcher.fileChanged.connect(self._reload)
 
         # --- Layout: sidebar left, preview right ---
         splitter = QSplitter(Qt.Horizontal)
@@ -198,6 +164,39 @@ class FilePreviewWidget(QWidget):
         for child_ul in node.find_all("ul", recursive=False):
             for sub_li in child_ul.find_all("li", recursive=False):
                 self._add_toc_item(sub_li, item)
+
+    def _render_markdown(self, file_path: str):
+        """Read and render a markdown file; return (html_body, toc_html)."""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as fh:
+                raw = fh.read()
+            html_body = markdown.markdown(raw, extensions=['extra', 'sane_lists'])
+            toc_html = markdown.markdown(
+                raw,
+                extensions=['toc', 'extra', 'sane_lists'],
+                extension_configs={'toc': {'permalink': False, 'anchorlink': True}},
+            )
+        except Exception as e:
+            html_body = f"<h1>Error loading {os.path.basename(file_path)}</h1><p>{type(e).__name__}: {e}</p>"
+            toc_html = ""
+        return html_body, toc_html
+
+    def _build_html(self, html_body: str) -> str:
+        """Wrap rendered markdown body with CSS, Mermaid, and KaTeX."""
+        return (
+            f"<html><head><style>{CSS}</style>{self._katex_css}</head>"
+            f"<body>{html_body}{self._mermaid_script}{self._katex_script}</body></html>"
+        )
+
+    def _reload(self, _path: str = ""):
+        """Called by QFileSystemWatcher when the watched file changes."""
+        # Re-add path: some editors (vim, neovim) replace the file atomically,
+        # which removes it from the watcher. Re-adding ensures continued watching.
+        self.watcher.addPath(self.file_path)
+        html_body, toc_html = self._render_markdown(self.file_path)
+        self.sidebar.clear()
+        self._populate_sidebar(toc_html)
+        self.view.setHtml(self._build_html(html_body))
 
     def _jump_to_section(self, item: QTreeWidgetItem):
         """Scroll the web view to the heading whose anchor matches the clicked item."""

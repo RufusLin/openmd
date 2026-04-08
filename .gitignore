@@ -37,3 +37,7 @@ ENV/
 # OS files
 .DS_Store
 Thumbs.db
+# Build artefacts
+dist/
+build/
+*.egg-info/
