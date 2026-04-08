@@ -85,12 +85,23 @@ class FilePreviewWidget(QWidget):
         super().__init__()
         self.file_path = file_path
 
-        # Mermaid and KaTeX CDN snippets — loaded on every render (requires internet)
-        # Scripts are synchronous; init calls use window.onload to ensure scripts
-        # have fully executed before we try to use them (required for Qt WebEngine setHtml)
-        self._mermaid_script = '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>\n<script>window.addEventListener("load",function(){if(window.mermaid)mermaid.initialize({startOnLoad:true,theme:"dark"});});</script>'
+        # KaTeX CDN snippets — loaded synchronously in the HTML head/body
+        # KaTeX renders fine via inline scripts in Qt WebEngine setHtml()
         self._katex_css = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">'
-        self._katex_script = '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"></script>\n<script>window.addEventListener("load",function(){if(window.renderMathInElement)renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}]});});</script>'
+        self._katex_script = (
+            '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>\n'
+            '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"></script>\n'
+            '<script>'
+            'document.addEventListener("DOMContentLoaded",function(){'
+            'if(window.renderMathInElement)renderMathInElement(document.body,{'
+            'delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}]'
+            '});});'
+            '</script>'
+        )
+        # Mermaid: Qt WebEngine setHtml() does not reliably fire window.onload or
+        # DOMContentLoaded for CDN scripts. Instead we load the script in the HTML
+        # and trigger mermaid.run() via page().runJavaScript() on the loadFinished signal.
+        self._mermaid_script = '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>'
 
         # --- Load and render markdown ---
         html_body, toc_html = self._render_markdown(file_path)
@@ -110,6 +121,10 @@ class FilePreviewWidget(QWidget):
 
         # --- Web view ---
         self.view = QWebEngineView()
+        # Connect loadFinished to trigger Mermaid rendering after the page and CDN
+        # scripts have fully loaded. This is the only reliable way to run Mermaid
+        # in Qt WebEngine when content is set via setHtml().
+        self.view.loadFinished.connect(self._on_load_finished)
         self.view.setHtml(full_html)
 
         # --- Live reload: single watcher per file, connected to _reload ---
@@ -194,6 +209,20 @@ class FilePreviewWidget(QWidget):
             f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{CSS}</style>{self._katex_css}</head>"
             f"<body>{html_body}{self._mermaid_script}{self._katex_script}</body></html>"
         )
+
+    def _on_load_finished(self, ok: bool):
+        """Called by loadFinished signal after setHtml() completes.
+
+        Triggers Mermaid rendering via runJavaScript — the only reliable way
+        to run CDN-loaded Mermaid in Qt WebEngine after setHtml().
+        """
+        if ok:
+            self.view.page().runJavaScript(
+                "if(window.mermaid){"
+                "  mermaid.initialize({startOnLoad:false,theme:'dark'});"
+                "  mermaid.run();"
+                "}"
+            )
 
     def _reload(self, _path: str = ""):
         """Called by QFileSystemWatcher when the watched file changes."""
