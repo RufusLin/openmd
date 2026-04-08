@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.4
+# Version: 1.4.5
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -41,7 +41,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl
 from PySide6.QtGui import QKeyEvent, QColor, QDesktopServices
-from PySide6.QtWebEngineCore import QWebEnginePage
+from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings
 from bs4 import BeautifulSoup
 
 # GitHub-Modern Dark Theme (built-in defaults)
@@ -249,6 +249,10 @@ class FilePreviewWidget(QWidget):
         # --- Web view ---
         self.view = QWebEngineView()
         self.view.setPage(_OpenMDPage(self.view))  # intercept external links
+        # Allow local file:// pages to load remote https:// images
+        self.view.settings().setAttribute(
+            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
+        )
         self.view.loadFinished.connect(self._on_load_finished)
         self._base_url = QUrl.fromLocalFile(
             os.path.dirname(os.path.abspath(file_path)) + os.sep
@@ -447,7 +451,7 @@ class MDPreviewWindow(QMainWindow):
     def __init__(self, tab_widget: QTabWidget):
         super().__init__()
         self.setCentralWidget(tab_widget)
-        self.setWindowTitle("MD Preview")
+        self.setWindowTitle("openmd by RufusLin")
         self.resize(QSize(1200, 1000))
         self.tab_widget = tab_widget
 
