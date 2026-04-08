@@ -1,6 +1,6 @@
 # openmd
 
-**Markdown for humans — not AI models.**
+**Markdown viewer for humans — not AI models.**
 
 I got tired of reading raw Markdown with `less` or opening VS Code/Cursor just to see it nicely rendered. So I built **openmd**.
 
