@@ -86,10 +86,11 @@ class FilePreviewWidget(QWidget):
         self.file_path = file_path
 
         # Mermaid and KaTeX CDN snippets — loaded on every render (requires internet)
-        # async on mermaid/katex so they don’t block the initial paint
-        self._mermaid_script = '<script async src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>\n<script>document.addEventListener("DOMContentLoaded",function(){if(window.mermaid)mermaid.initialize({startOnLoad:true});});</script>'
+        # Scripts are synchronous; init calls use window.onload to ensure scripts
+        # have fully executed before we try to use them (required for Qt WebEngine setHtml)
+        self._mermaid_script = '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>\n<script>window.addEventListener("load",function(){if(window.mermaid)mermaid.initialize({startOnLoad:true,theme:"dark"});});</script>'
         self._katex_css = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">'
-        self._katex_script = '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"></script>\n<script>document.addEventListener("DOMContentLoaded",function(){if(window.renderMathInElement)renderMathInElement(document.body);});</script>'
+        self._katex_script = '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>\n<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"></script>\n<script>window.addEventListener("load",function(){if(window.renderMathInElement)renderMathInElement(document.body,{delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}]});});</script>'
 
         # --- Load and render markdown ---
         html_body, toc_html = self._render_markdown(file_path)
