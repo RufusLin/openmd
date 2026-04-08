@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.3.0
+# Version: 1.3.2
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -42,7 +42,7 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QSize, Qt, QFileSystemWatcher
 from bs4 import BeautifulSoup
 
-# GitHub-Modern Dark Theme
+# GitHub-Modern Dark Theme (built-in defaults)
 CSS = """body { 
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
     line-height: 1.6; color: #c9d1d9; max-width: 900px; margin: auto; padding: 2rem; background-color: #0d1117; 
@@ -55,7 +55,29 @@ code { background-color: rgba(110,118,129,0.4); padding: 0.2em 0.4em; border-rad
 table { border-collapse: collapse; width: 100%; margin: 24px 0; border: 1px solid #30363d; }
 table th, table td { border: 1px solid #30363d; padding: 8px 12px; }
 table tr:nth-child(even) { background-color: #161b22; }
+h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: inherit; text-decoration: none; }
 """
+
+
+def _load_user_css() -> str:
+    """Load .openmd.css from cwd, script install dir, or home dir (first match wins).
+
+    The user CSS is appended after the built-in CSS so any rule in .openmd.css
+    overrides the matching default via normal CSS cascade.
+    """
+    candidates = [
+        os.path.join(os.getcwd(), '.openmd.css'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '.openmd.css'),
+        os.path.expanduser('~/.openmd.css'),
+    ]
+    for path in candidates:
+        if os.path.isfile(path):
+            try:
+                with open(path, 'r', encoding='utf-8') as f:
+                    return f.read()
+            except OSError:
+                pass
+    return ''
 
 # Sidebar CSS injected into the preview HTML
 SIDEBAR_CSS = """
@@ -219,9 +241,15 @@ class FilePreviewWidget(QWidget):
         return html_body, toc_html
 
     def _build_html(self, html_body: str) -> str:
-        """Wrap rendered markdown body with CSS, Mermaid, and KaTeX."""
+        """Wrap rendered markdown body with CSS, Mermaid, and KaTeX.
+
+        Built-in CSS defaults come first; user .openmd.css (if found) is appended
+        so its rules win via normal CSS cascade without replacing the defaults.
+        """
+        user_css = _load_user_css()
+        combined_css = CSS + ('\n/* .openmd.css */\n' + user_css if user_css else '')
         return (
-            f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{CSS}</style>{self._katex_css}</head>"
+            f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{combined_css}</style>{self._katex_css}</head>"
             f"<body>{html_body}{self._mermaid_script}{self._katex_script}</body></html>"
         )
 

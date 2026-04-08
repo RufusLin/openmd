@@ -1,12 +1,27 @@
 # openmd
 
-A fast, minimal Markdown previewer for macOS with a GitHub-dark theme, collapsible sidebar TOC, live reload, Mermaid diagrams, KaTeX math, and multi-file tab support.
-Built this for myself because who needs to fire up VS Code or Cursor just to quickly view a pretty printed Markdown file, right?🤣
+**Markdown for humans — not AI models.**
+
+I got tired of reading raw Markdown with `less` or opening VS Code/Cursor just to see it nicely rendered. So I built **openmd**.
+
+Run `openmd *.md` (or any Markdown files) from the shell and a window pops up with:
+- Tabs for multiple files (up to 6)
+- Live reload when you save in your editor
+- Mermaid diagrams and KaTeX math
+- Collapsible navigation sidebar (TOC)
+- Full customization via `.openmd.css`
+
+No browser, no TUI — just proper rendering with nice fonts and styles. It runs in the background so the window stays completely independent.
+
+**Built this for myself and I use it every day - because nice-looking text matters!** 🤣
 
 ![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Platform: macOS](https://img.shields.io/badge/platform-macOS-lightgrey) ![PyPI version](https://img.shields.io/pypi/v/openmd)
 
 **GitHub:** [RufusLin/openmd](https://github.com/RufusLin/openmd)
-**Warning - Lazy Maintainer:** Really bad at reading PRs, but will pay attention to issues to fix bugs. Feel free to fork, remember to give credit, please.
+
+**Warning - Lazy Maintainer:** Yeah, not a fan of reading PRs, but will pay attention to issues to fix bugs. Feel free to fork, but remember to give credit, please.🙏🏻
+
+X: @rufuslinjapan
 
 ---
 
@@ -28,14 +43,9 @@ openmd docs/*.md
 
 ### Shell aliases (optional)
 
-Add to your `~/.zshrc` or `~/.bashrc` for quick access:
+Add to your `~/.zshrc` or `~/.bashrc` for quick access to remote files:
 
 ```zsh
-# Local preview — opens in background
-localmd() {
-    openmd "$@" >/dev/null 2>&1 &
-}
-
 # Remote preview via SSH (requires a 'home' SSH alias in ~/.ssh/config)
 remotemd() {
     local remote_path="$1"
@@ -47,6 +57,13 @@ remotemd() {
 ```
 
 ---
+
+## What it looks like
+
+![openmd with multiple tabs and TOC sidebar](pix/1.png)
+![Mermaid diagram and KaTeX math rendered](pix/2.png)
+
+*(Click any image to enlarge)*
 
 ## Features
 
@@ -64,11 +81,13 @@ remotemd() {
 
 ## Requirements
 
-- macOS (uses PySide6/Qt WebEngine)
-- Python 3.8+
+- macOS, Linux, Posix 
+- Python 3.8+ 
 - [PySide6](https://pypi.org/project/PySide6/)
 - [Markdown](https://pypi.org/project/Markdown/)
 - [BeautifulSoup4](https://pypi.org/project/beautifulsoup4/)
+
+**Note:** Mermaid and KaTeX require an internet connection to load from CDN.
 
 ---
 
@@ -92,43 +111,13 @@ pip install -e .
 
 ---
 
-## Live reload
-
-Openmd watches the opened file for changes using Qt's `QFileSystemWatcher`. Save the file in any editor (vim, neovim, VS Code, etc.) and the preview — including the sidebar TOC — updates instantly with no manual refresh.
-
-## Mermaid & KaTeX
-
-Mermaid and KaTeX are loaded automatically from CDN on every render. No configuration required.
-
-**Mermaid example:**
-````markdown
-```mermaid
-graph TD
-    A[Start] --> B{Decision}
-    B -->|Yes| C[Do it]
-    B -->|No| D[Skip]
-```
-````
-
-**KaTeX example:**
-```markdown
-Inline: $E = mc^2$
-
-Display:
-$$\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$
-```
-
-> **Note:** Mermaid and KaTeX require an internet connection to load from CDN. Offline rendering is not currently supported (maybe never, come to think of it😉).
-
----
-
-## Keyboard shortcuts
+## Keyboard shortcuts in sidebar
 
 | Key | Action |
 |-----|--------|
 | `Esc` | Close the preview window |
 | `↑` / `↓` | Navigate the sidebar TOC |
-| Click heading | Jump to that section |
+| Return | Jump to selected section |
 
 ---
 
