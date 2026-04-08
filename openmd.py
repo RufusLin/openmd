@@ -273,11 +273,18 @@ class FilePreviewWidget(QWidget):
         return bar
 
     def _apply_theme(self, theme_name: str):
-        """Apply a theme by setting a class on <body> via JavaScript."""
+        """Apply a theme by setting the theme class on body, pre, code, and a elements.
+
+        The CSS uses element-level selectors like pre.theme-xxx and code.theme-xxx,
+        so we must propagate the class to those elements as well as <body>.
+        """
         self._current_theme = theme_name
         _set_saved_theme(self.cfg, theme_name)
         self.view.page().runJavaScript(
             f"document.body.className = 'theme-{theme_name}';"
+            f"document.querySelectorAll('pre,code,a').forEach("
+            f"  function(el){{ el.className = 'theme-{theme_name}'; }}"
+            f");"
         )
 
     def _populate_sidebar(self, toc_html: str):
@@ -344,11 +351,24 @@ class FilePreviewWidget(QWidget):
         """Wrap rendered markdown body with CSS, Mermaid, and KaTeX."""
         user_css = _load_user_css()
         combined_css = CSS + ('\n/* .openmd.css */\n' + user_css if user_css else '')
-        # If a theme is active, pre-apply it so the page loads with the right theme
+        # If a theme is active, pre-apply it so the page loads with the right theme.
+        # We also inject a small inline script to propagate the class to pre/code/a
+        # elements, since the CSS uses element-level selectors like pre.theme-xxx.
         body_class = f' class="theme-{self._current_theme}"' if self._current_theme else ''
+        if self._current_theme:
+            theme_init_js = (
+                f'<script>'
+                f'document.addEventListener("DOMContentLoaded",function(){{'
+                f'  var t="theme-{self._current_theme}";'
+                f'  document.querySelectorAll("pre,code,a").forEach(function(el){{el.className=t;}});'
+                f'}});'
+                f'</script>'
+            )
+        else:
+            theme_init_js = ''
         return (
             f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{combined_css}</style>{self._katex_css}</head>"
-            f"<body{body_class}>{html_body}{self._mermaid_script}{self._katex_script}</body></html>"
+            f"<body{body_class}>{html_body}{theme_init_js}{self._mermaid_script}{self._katex_script}</body></html>"
         )
 
     def _on_load_finished(self, ok: bool):
