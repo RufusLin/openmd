@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.3
+# Version: 1.4.4
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -371,15 +371,40 @@ class FilePreviewWidget(QWidget):
         return html_body, toc_html
 
     def _build_html(self, html_body: str) -> str:
-        """Wrap rendered markdown body with CSS, Mermaid, and KaTeX."""
+        """Wrap rendered markdown body with CSS, Mermaid, and KaTeX.
+
+        Qt WebEngine blocks @import url(...) inside <style> blocks when the page
+        is loaded via setHtml() (no real HTTP origin). To load external fonts
+        (e.g. Google Fonts), we extract @import url(...) lines from the user CSS
+        and re-emit them as <link rel="stylesheet"> tags in <head>, which Qt allows.
+        """
         user_css = _load_user_css()
+
+        # Extract @import url(...) lines from user CSS and convert to <link> tags
+        import_links = ''
+        if user_css:
+            import_lines = []
+            clean_lines = []
+            for line in user_css.splitlines():
+                stripped = line.strip()
+                if stripped.lower().startswith('@import url('):
+                    # Extract the URL from @import url('...') or @import url("...")
+                    url_match = re.search(r"@import url\(['\"]?([^'\"\)]+)['\"]?\)", stripped, re.IGNORECASE)
+                    if url_match:
+                        href = url_match.group(1)
+                        import_links += f'<link rel="stylesheet" href="{href}">'
+                else:
+                    clean_lines.append(line)
+            user_css = '\n'.join(clean_lines)
+
         combined_css = CSS + ('\n/* .openmd.css */\n' + user_css if user_css else '')
         # If a theme is active, pre-apply it so the page loads with the right theme.
         # CSS uses descendant selectors (body.theme-xxx pre, etc.) so body class alone
         # is sufficient — no need to propagate the class to child elements.
         body_class = f' class="theme-{self._current_theme}"' if self._current_theme else ''
         return (
-            f"<!DOCTYPE html><html><head><meta charset='utf-8'><style>{combined_css}</style>{self._katex_css}</head>"
+            f"<!DOCTYPE html><html><head><meta charset='utf-8'>{import_links}"
+            f"<style>{combined_css}</style>{self._katex_css}</head>"
             f"<body{body_class}>{html_body}{self._mermaid_script}{self._katex_script}</body></html>"
         )
 
