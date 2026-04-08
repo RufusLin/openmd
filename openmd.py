@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.9
+# Version: 1.4.10
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -261,7 +261,7 @@ class FilePreviewWidget(QWidget):
                 QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
             )
             settings.setAttribute(
-                QWebEngineSettings.WebAttribute.LocalContentCanAccessLocalUrls, True
+                QWebEngineSettings.WebAttribute.LocalContentCanAccessFileUrls, True
             )
         self.view.loadFinished.connect(self._on_load_finished)
         self._base_url = QUrl.fromLocalFile(
