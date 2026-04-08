@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.8
+# Version: 1.4.9
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -250,14 +250,19 @@ class FilePreviewWidget(QWidget):
         # --- Web view ---
         self.view = QWebEngineView()
         self.view.setPage(_OpenMDPage(self.view))  # intercept external links
-        # Allow local file:// pages to load remote https:// images.
+        # Allow local file:// pages to load remote https:// images and
+        # local files from other directories (e.g. temp cache).
         # Must be set on both the profile and the view settings to take effect.
-        QWebEngineProfile.defaultProfile().settings().setAttribute(
-            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
-        )
-        self.view.settings().setAttribute(
-            QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
-        )
+        for settings in (
+            QWebEngineProfile.defaultProfile().settings(),
+            self.view.settings(),
+        ):
+            settings.setAttribute(
+                QWebEngineSettings.WebAttribute.LocalContentCanAccessRemoteUrls, True
+            )
+            settings.setAttribute(
+                QWebEngineSettings.WebAttribute.LocalContentCanAccessLocalUrls, True
+            )
         self.view.loadFinished.connect(self._on_load_finished)
         self._base_url = QUrl.fromLocalFile(
             os.path.dirname(os.path.abspath(file_path)) + os.sep
