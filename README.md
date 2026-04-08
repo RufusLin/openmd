@@ -1,6 +1,6 @@
 # openmd
 
-A fast, minimal Markdown previewer for macOS with a GitHub-dark theme, collapsible sidebar TOC, and multi-file tab support.
+A fast, minimal Markdown previewer for macOS with a GitHub-dark theme, collapsible sidebar TOC, live reload, Mermaid diagrams, KaTeX math, and multi-file tab support.
 
 ![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Platform: macOS](https://img.shields.io/badge/platform-macOS-lightgrey)
 
@@ -9,6 +9,9 @@ A fast, minimal Markdown previewer for macOS with a GitHub-dark theme, collapsib
 ## Features
 
 - **GitHub-dark theme** — comfortable reading in low-light environments
+- **Live reload** — the preview updates instantly when the file is saved; no manual refresh needed
+- **Mermaid diagrams** — fenced ` ```mermaid ` blocks render automatically via CDN
+- **KaTeX math** — inline `$…$` and display `$$…$$` expressions render out of the box
 - **Collapsible sidebar TOC** — H1 → top-level, H2 → children, H3 → grandchildren; click any heading to jump to it
 - **Multi-file tabs** — pass multiple `.md` files and each opens in its own tab
 - **Interactive file picker** — run with no arguments and choose from `.md` files in the current directory via a curses-based picker
@@ -82,6 +85,36 @@ remotemd() {
     openmd "$tmp_file" >/dev/null 2>&1 &
 }
 ```
+
+---
+
+## Live reload
+
+Openmd watches the opened file for changes using Qt's `QFileSystemWatcher`. Save the file in any editor (vim, neovim, VS Code, etc.) and the preview — including the sidebar TOC — updates instantly with no manual refresh.
+
+## Mermaid & KaTeX
+
+Mermaid and KaTeX are loaded automatically from CDN on every render. No configuration required.
+
+**Mermaid example:**
+````markdown
+```mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Do it]
+    B -->|No| D[Skip]
+```
+````
+
+**KaTeX example:**
+```markdown
+Inline: $E = mc^2$
+
+Display:
+$$\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$
+```
+
+> **Note:** Mermaid and KaTeX require an internet connection to load from CDN. Offline rendering is not currently supported.
 
 ---
 
