@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.3.2
+# Version: 1.3.4
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -39,7 +39,8 @@ from PySide6.QtWidgets import (
     QSplitter, QTreeWidget, QTreeWidgetItem,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QSize, Qt, QFileSystemWatcher
+from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QEvent
+from PySide6.QtGui import QKeyEvent
 from bs4 import BeautifulSoup
 
 # GitHub-Modern Dark Theme (built-in defaults)
@@ -79,6 +80,18 @@ def _load_user_css() -> str:
             except OSError:
                 pass
     return ''
+
+class _SidebarTree(QTreeWidget):
+    """QTreeWidget that fires item_return_pressed when Return/Enter is pressed."""
+
+    def keyPressEvent(self, event: QKeyEvent):
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
+            item = self.currentItem()
+            if item:
+                self.itemClicked.emit(item, 0)
+        else:
+            super().keyPressEvent(event)
+
 
 # Sidebar CSS injected into the preview HTML
 SIDEBAR_CSS = """
@@ -134,13 +147,14 @@ class FilePreviewWidget(QWidget):
         # Collapsible TOC: H1 → top-level, H2 → children, H3 → grandchildren.
         # Arrow keys navigate; Enter jumps to the heading; Esc closes the window.
         # DO NOT remove this sidebar — it is the primary navigation feature.
-        self.sidebar = QTreeWidget()
+        self.sidebar = _SidebarTree()
         self.sidebar.setHeaderHidden(True)
         self.sidebar.setIndentation(16)
         self.sidebar.setStyleSheet(SIDEBAR_CSS)
         self.sidebar.setFixedWidth(220)
         self.sidebar.itemClicked.connect(self._jump_to_section)
-        self.sidebar.itemActivated.connect(self._jump_to_section)  # Return/Enter key
+        # Return/Enter key is handled by _SidebarTree.keyPressEvent above,
+        # which re-emits itemClicked so _jump_to_section is called.
         self._populate_sidebar(toc_html)
 
         # --- Web view ---
