@@ -39,7 +39,7 @@ from PySide6.QtWidgets import (
     QSplitter, QTreeWidget, QTreeWidgetItem,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QSize, Qt
+from PySide6.QtCore import QSize, Qt, QFileSystemWatcher
 from bs4 import BeautifulSoup
 
 # GitHub-Modern Dark Theme
@@ -100,7 +100,34 @@ class FilePreviewWidget(QWidget):
             html_body = f"<h1>Error loading {os.path.basename(file_path)}</h1><p>{type(e).__name__}: {e}</p>"
             toc_html = ""
 
-        full_html = f"<html><head><style>{CSS}</style></head><body>{html_body}</body></html>"
+        # Set up file watcher for live reload
+        self.watcher = QFileSystemWatcher(self)
+        self.watcher.addPath(self.file_path)
+
+        # Embed Mermaid and KaTeX for diagrams and math
+        mermaid_script = '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>\n<script>mermaid.initialize({ startOnLoad: true });</script>'
+        katex_css = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">'
+        katex_script = '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>\n<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"></script>\n<script>renderMathInElement(document.body);</script>'
+
+        def reload():
+            try:
+                with open(self.file_path, 'r', encoding='utf-8') as fh:
+                    raw = fh.read()
+                html_body = markdown.markdown(raw, extensions=['extra', 'sane_lists'])
+                toc_html = markdown.markdown(
+                    raw,
+                    extensions=['toc', 'extra', 'sane_lists'],
+                    extension_configs={'toc': {'permalink': False, 'anchorlink': True}},
+                )
+            except Exception as e:
+                html_body = f"<h1>Error loading {os.path.basename(self.file_path)}</h1><p>{type(e).__name__}: {e}</p>"
+                toc_html = ""
+            self._populate_sidebar(toc_html)
+            full_html = f"<html><head><style>{CSS}</style>{katex_css}</head><body>{html_body}{mermaid_script}{katex_script}</body></html>"
+            self.view.setHtml(full_html)
+        self.watcher.fileChanged.connect(reload)
+
+        full_html = f"<html><head><style>{CSS}</style>{katex_css}</head><body>{html_body}{mermaid_script}{katex_script}</body></html>"
 
         # --- Sidebar (QTreeWidget) ---
         # Collapsible TOC: H1 → top-level, H2 → children, H3 → grandchildren.
@@ -117,6 +144,11 @@ class FilePreviewWidget(QWidget):
         # --- Web view ---
         self.view = QWebEngineView()
         self.view.setHtml(full_html)
+
+        # --- Live reload support ---
+        self.watcher = QFileSystemWatcher(self)
+        self.watcher.addPath(self.file_path)
+        self.watcher.fileChanged.connect(self._on_file_changed)
 
         # --- Layout: sidebar left, preview right ---
         splitter = QSplitter(Qt.Horizontal)
