@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.15
+# Version: 1.4.16
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -26,7 +26,7 @@
 # performed inside the Python code.
 # -------------------------------------------------
 
-import sys, os, re, markdown, configparser, hashlib, tempfile
+import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess
 import urllib.request
 
 # Try to import curses for file picker; fallback to simple list
@@ -591,20 +591,24 @@ def main():
             sys.stderr.write("Warning: more than 6 files supplied; showing first 6.\n")
             md_files = md_files[:6]
 
-    # Fork so the shell prompt returns immediately.  The parent exits right
-    # away; the child continues to start the Qt GUI.  This makes openmd behave
-    # like a proper GUI app (similar to `open -a …` on macOS) — no blocking,
-    # no need for `&`, and no Ctrl+C / SIGHUP issues because the terminal has
-    # no handle on the child process.
-    # Only fork on Unix-like systems (macOS, Linux); skip on Windows.
-    if hasattr(os, 'fork'):
-        pid = os.fork()
-        if pid != 0:
-            # Parent: exit immediately so the shell prompt returns.
-            os._exit(0)
-        # Child: detach from the terminal's process group so SIGHUP on
-        # terminal close does not reach us.
-        os.setsid()
+    # Re-exec as a detached child so the shell prompt returns immediately.
+    # Using subprocess.Popen instead of os.fork() avoids the macOS
+    # DeprecationWarning about fork() in a multi-threaded process (Qt/ObjC
+    # runtime threads are already running by the time main() is called).
+    # The _OPENMD_CHILD env var prevents the child from re-spawning itself.
+    # start_new_session=True is the setsid() equivalent — detaches from the
+    # terminal's process group so SIGHUP on terminal close does not reach it.
+    # Skip on Windows (no start_new_session support in the same way).
+    if sys.platform != 'win32' and os.environ.get('_OPENMD_CHILD') != '1':
+        env = os.environ.copy()
+        env['_OPENMD_CHILD'] = '1'
+        subprocess.Popen(
+            [sys.executable] + sys.argv,
+            env=env,
+            start_new_session=True,
+            close_fds=True,
+        )
+        os._exit(0)
 
     try:
         app = QApplication(sys.argv)
