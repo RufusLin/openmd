@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.12
+# Version: 1.4.13
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -40,7 +40,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QSplitter, QTreeWidget, QTreeWidgetItem, QPushButton,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl
+from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl, QTimer
 from PySide6.QtGui import QKeyEvent, QColor, QDesktopServices
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings, QWebEngineProfile
 from bs4 import BeautifulSoup
