@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.13
+# Version: 1.4.14
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -26,7 +26,7 @@
 # performed inside the Python code.
 # -------------------------------------------------
 
-import sys, os, re, markdown, configparser, hashlib, tempfile, signal
+import sys, os, re, markdown, configparser, hashlib, tempfile
 import urllib.request
 
 # Try to import curses for file picker; fallback to simple list
@@ -40,7 +40,7 @@ from PySide6.QtWidgets import (
     QHBoxLayout, QSplitter, QTreeWidget, QTreeWidgetItem, QPushButton,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl, QTimer
+from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl
 from PySide6.QtGui import QKeyEvent, QColor, QDesktopServices
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings, QWebEngineProfile
 from bs4 import BeautifulSoup
@@ -591,15 +591,23 @@ def main():
             sys.stderr.write("Warning: more than 6 files supplied; showing first 6.\n")
             md_files = md_files[:6]
 
+    # Fork so the shell prompt returns immediately.  The parent exits right
+    # away; the child continues to start the Qt GUI.  This makes openmd behave
+    # like a proper GUI app (similar to `open -a …` on macOS) — no blocking,
+    # no need for `&`, and no Ctrl+C / SIGHUP issues because the terminal has
+    # no handle on the child process.
+    # Only fork on Unix-like systems (macOS, Linux); skip on Windows.
+    if hasattr(os, 'fork'):
+        pid = os.fork()
+        if pid != 0:
+            # Parent: exit immediately so the shell prompt returns.
+            os._exit(0)
+        # Child: detach from the terminal's process group so SIGHUP on
+        # terminal close does not reach us.
+        os.setsid()
+
     try:
         app = QApplication(sys.argv)
-        # Allow Ctrl+C to quit the Qt app when running in the foreground.
-        # Qt's event loop blocks Python signal delivery, so a periodic QTimer
-        # wakes Python every 500ms to check for pending signals.
-        signal.signal(signal.SIGINT, lambda *_: app.quit())
-        sigint_timer = QTimer()
-        sigint_timer.start(500)
-        sigint_timer.timeout.connect(lambda: None)  # no-op; just yields to Python
         cfg = _load_config()
         tab_widget = QTabWidget()
         for f in md_files:
