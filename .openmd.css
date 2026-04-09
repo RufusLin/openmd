@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@400;600;700&family=Lato:wght@400;700&family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&family=Source+Code+Pro:wght@400;600&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Cormorant+Garamond:wght@400;600&family=Raleway:wght@400;600&family=Space+Mono:wght@400;700&family=Libre+Baskerville:wght@400;700&family=PT+Serif:wght@400;700&family=Crimson+Pro:wght@400;600&family=Fira+Sans:wght@400;500&family=Ubuntu:wght@400;700&display=swap');
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@400;600;700&family=Lato:wght@400;700&family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&family=Source+Code+Pro:wght@400;600&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Cormorant+Garamond:wght@400;600&family=Raleway:wght@400;600&family=Space+Mono:wght@400;700&display=swap);
 
 body {
@@ -237,6 +239,186 @@ body.theme-white-paper h6 a {
     text-decoration: none;
 }
 
+/* Theme: calm-sky (light background) */
+body.theme-calm-sky {
+    font-family: "Work Sans", sans-serif;
+    color: #2c3e50;
+    background-color: #e6f7ff;
+}
+body.theme-calm-sky pre {
+    background-color: #d0e9ff;
+    font-family: "Source Code Pro", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #c0d8f0;
+    overflow: auto;
+}
+body.theme-calm-sky code {
+    background-color: rgba(226, 247, 255, 0.4);
+    font-family: "Source Code Pro", monospace;
+}
+body.theme-calm-sky pre code {
+    background-color: #b0d8ff;
+    color: #2c3e50;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-calm-sky a,
+body.theme-calm-sky h1 a,
+body.theme-calm-sky h2 a,
+body.theme-calm-sky h3 a,
+body.theme-calm-sky h4 a,
+body.theme-calm-sky h5 a,
+body.theme-calm-sky h6 a {
+    color: #0d47a1;
+    text-decoration: none;
+}
+
+/* Theme: boss-beige (light background) */
+body.theme-boss-beige {
+    font-family: "PT Serif", serif;
+    color: #4a3f35;
+    background-color: #f5e6d3;
+}
+body.theme-boss-beige pre {
+    background-color: #e8d8c5;
+    font-family: "Source Code Pro", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #cbb98f;
+    overflow: auto;
+}
+body.theme-boss-beige code {
+    background-color: rgba(245, 230, 211, 0.4);
+    font-family: "Source Code Pro", monospace;
+}
+body.theme-boss-beige pre code {
+    background-color: #cbb98f;
+    color: #4a3f35;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-boss-beige a,
+body.theme-boss-beige h1 a,
+body.theme-boss-beige h2 a,
+body.theme-boss-beige h3 a,
+body.theme-boss-beige h4 a,
+body.theme-boss-beige h5 a,
+body.theme-boss-beige h6 a {
+    color: #5d4037;
+    text-decoration: none;
+}
+
+/* Theme: ancient-papyrus (light background) */
+body.theme-ancient-papyrus {
+    font-family: "Libre Baskerville", serif;
+    color: #5a4636;
+    background-color: #faf3e0;
+}
+body.theme-ancient-papyrus pre {
+    background-color: #e9dfc5;
+    font-family: "Source Code Pro", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #d5c9a6;
+    overflow: auto;
+}
+body.theme-ancient-papyrus code {
+    background-color: rgba(250, 243, 224, 0.4);
+    font-family: "Source Code Pro", monospace;
+}
+body.theme-ancient-papyrus pre code {
+    background-color: #d5c9a6;
+    color: #5a4636;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-ancient-papyrus a,
+body.theme-ancient-papyrus h1 a,
+body.theme-ancient-papyrus h2 a,
+body.theme-ancient-papyrus h3 a,
+body.theme-ancient-papyrus h4 a,
+body.theme-ancient-papyrus h5 a,
+body.theme-ancient-papyrus h6 a {
+    color: #7b614e;
+    text-decoration: none;
+}
+
+/* Theme: cream-paper (light background) */
+body.theme-cream-paper {
+    font-family: "Lora", serif;
+    color: #333333;
+    background-color: #fff9e6;
+}
+body.theme-cream-paper pre {
+    background-color: #f0e5d8;
+    font-family: "Source Code Pro", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #d9cbb8;
+    overflow: auto;
+}
+body.theme-cream-paper code {
+    background-color: rgba(255, 249, 230, 0.4);
+    font-family: "Source Code Pro", monospace;
+}
+body.theme-cream-paper pre code {
+    background-color: #d9cbb8;
+    color: #333333;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-cream-paper a,
+body.theme-cream-paper h1 a,
+body.theme-cream-paper h2 a,
+body.theme-cream-paper h3 a,
+body.theme-cream-paper h4 a,
+body.theme-cream-paper h5 a,
+body.theme-cream-paper h6 a {
+    color: #5d4037;
+    text-decoration: none;
+}
+
+/* Theme: formal-note (light background) */
+body.theme-formal-note {
+    font-family: "Fira Sans", sans-serif;
+    color: #333333;
+    background-color: #f2f2f2;
+}
+body.theme-formal-note pre {
+    background-color: #e0e0e0;
+    font-family: "Source Code Pro", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #c6c6c6;
+    overflow: auto;
+}
+body.theme-formal-note code {
+    background-color: rgba(242, 242, 242, 0.4);
+    font-family: "Source Code Pro", monospace;
+}
+body.theme-formal-note pre code {
+    background-color: #c6c6c6;
+    color: #333333;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-formal-note a,
+body.theme-formal-note h1 a,
+body.theme-formal-note h2 a,
+body.theme-formal-note h3 a,
+body.theme-formal-note h4 a,
+body.theme-formal-note h5 a,
+body.theme-formal-note h6 a {
+    color: #212121;
+    text-decoration: none;
+}
+
 /* Theme: solar-flare */
 body.theme-solar-flare {
     font-family: "Poppins", sans-serif;
@@ -414,5 +596,185 @@ body.theme-saffron-sand h4 a,
 body.theme-saffron-sand h5 a,
 body.theme-saffron-sand h6 a {
     color: #ffd54f;
+    text-decoration: none;
+}
+
+/* Theme: calm-sky (light background) */
+body.theme-calm-sky {
+    font-family: "Libre Baskerville", serif;
+    color: #2c3e50;
+    background-color: #f0f8ff;
+}
+body.theme-calm-sky pre {
+    background-color: #e6f2ff;
+    font-family: "Roboto Mono", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #c0d8e0;
+    overflow: auto;
+}
+body.theme-calm-sky code {
+    background-color: rgba(44,62,80,0.1);
+    font-family: "Roboto Mono", monospace;
+}
+body.theme-calm-sky pre code {
+    background-color: #cce5ff;
+    color: #2c3e50;
+    font-family: "Roboto Mono", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-calm-sky a,
+body.theme-calm-sky h1 a,
+body.theme-calm-sky h2 a,
+body.theme-calm-sky h3 a,
+body.theme-calm-sky h4 a,
+body.theme-calm-sky h5 a,
+body.theme-calm-sky h6 a {
+    color: #1565c0;
+    text-decoration: none;
+}
+
+/* Theme: boss-beige (light background) */
+body.theme-boss-beige {
+    font-family: "PT Serif", serif;
+    color: #4a3c2b;
+    background-color: #f5e6d3;
+}
+body.theme-boss-beige pre {
+    background-color: #fff8e1;
+    font-family: "Roboto Mono", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #d4c5a9;
+    overflow: auto;
+}
+body.theme-boss-beige code {
+    background-color: rgba(74,60,43,0.1);
+    font-family: "Roboto Mono", monospace;
+}
+body.theme-boss-beige pre code {
+    background-color: #eae2d6;
+    color: #4a3c2b;
+    font-family: "Roboto Mono", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-boss-beige a,
+body.theme-boss-beige h1 a,
+body.theme-boss-beige h2 a,
+body.theme-boss-beige h3 a,
+body.theme-boss-beige h4 a,
+body.theme-boss-beige h5 a,
+body.theme-boss-beige h6 a {
+    color: #8c704f;
+    text-decoration: none;
+}
+
+/* Theme: ancient-papyrus (light background) */
+body.theme-ancient-papyrus {
+    font-family: "Crimson Pro", serif;
+    color: #3b2f2f;
+    background-color: #fdf5e6;
+}
+body.theme-ancient-papyrus pre {
+    background-color: #fff9e6;
+    font-family: "Source Code Pro", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #e8d9c5;
+    overflow: auto;
+}
+body.theme-ancient-papyrus code {
+    background-color: rgba(59,47,47,0.1);
+    font-family: "Source Code Pro", monospace;
+}
+body.theme-ancient-papyrus pre code {
+    background-color: #f5e9df;
+    color: #3b2f2f;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-ancient-papyrus a,
+body.theme-ancient-papyrus h1 a,
+body.theme-ancient-papyrus h2 a,
+body.theme-ancient-papyrus h3 a,
+body.theme-ancient-papyrus h4 a,
+body.theme-ancient-papyrus h5 a,
+body.theme-ancient-papyrus h6 a {
+    color: #7a5e4f;
+    text-decoration: none;
+}
+
+/* Theme: cream-paper (light background) */
+body.theme-cream-paper {
+    font-family: "Fira Sans", sans-serif;
+    color: #333333;
+    background-color: #fff9e6;
+}
+body.theme-cream-paper pre {
+    background-color: #f5f0d8;
+    font-family: "Courier New", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #e0d5b5;
+    overflow: auto;
+}
+body.theme-cream-paper code {
+    background-color: rgba(51,51,51,0.08);
+    font-family: "Courier New", monospace;
+}
+body.theme-cream-paper pre code {
+    background-color: #f0e8d5;
+    color: #333333;
+    font-family: "Courier New", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-cream-paper a,
+body.theme-cream-paper h1 a,
+body.theme-cream-paper h2 a,
+body.theme-cream-paper h3 a,
+body.theme-cream-paper h4 a,
+body.theme-cream-paper h5 a,
+body.theme-cream-paper h6 a {
+    color: #7a6e5c;
+    text-decoration: none;
+}
+
+/* Theme: formal-note (light background) */
+body.theme-formal-note {
+    font-family: "Ubuntu", sans-serif;
+    color: #222222;
+    background-color: #f8f4e3;
+}
+body.theme-formal-note pre {
+    background-color: #f0ebd7;
+    font-family: "Roboto Mono", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #d9c9a6;
+    overflow: auto;
+}
+body.theme-formal-note code {
+    background-color: rgba(34,34,34,0.07);
+    font-family: "Roboto Mono", monospace;
+}
+body.theme-formal-note pre code {
+    background-color: #e5dcc2;
+    color: #222222;
+    font-family: "Roboto Mono", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-formal-note a,
+body.theme-formal-note h1 a,
+body.theme-formal-note h2 a,
+body.theme-formal-note h3 a,
+body.theme-formal-note h4 a,
+body.theme-formal-note h5 a,
+body.theme-formal-note h6 a {
+    color: #555555;
     text-decoration: none;
 }
