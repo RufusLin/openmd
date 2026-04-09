@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.14
+# Version: 1.4.15
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
