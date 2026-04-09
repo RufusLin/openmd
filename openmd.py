@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.10
+# Version: 1.4.11
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -26,7 +26,7 @@
 # performed inside the Python code.
 # -------------------------------------------------
 
-import sys, os, re, markdown, configparser, hashlib, tempfile
+import sys, os, re, markdown, configparser, hashlib, tempfile, signal
 import urllib.request
 
 # Try to import curses for file picker; fallback to simple list
@@ -593,6 +593,8 @@ def main():
 
     try:
         app = QApplication(sys.argv)
+        # Allow Ctrl+C to quit the Qt app when running in the foreground
+        signal.signal(signal.SIGINT, lambda *_: app.quit())
         cfg = _load_config()
         tab_widget = QTabWidget()
         for f in md_files:
