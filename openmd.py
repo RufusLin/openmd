@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.17
+# Version: 1.4.18
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -26,7 +26,7 @@
 # performed inside the Python code.
 # -------------------------------------------------
 
-import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess
+import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess, threading, time, json
 import urllib.request
 
 # Try to import curses for file picker; fallback to simple list
@@ -38,9 +38,10 @@ except Exception:
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout,
     QHBoxLayout, QSplitter, QTreeWidget, QTreeWidgetItem, QPushButton,
+    QDialog, QLabel, QFrame,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl
+from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl, QTimer
 from PySide6.QtGui import QKeyEvent, QColor, QDesktopServices
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings, QWebEngineProfile
 from bs4 import BeautifulSoup
@@ -68,13 +69,24 @@ QTreeWidget {
     background: #161b22;
     color: #c9d1d9;
     border-right: 1px solid #30363d;
-    font-size: 13px;
+    font-size: 14px;
 }
+QTreeWidget::item { padding: 2px 0; }
 QTreeWidget::item:hover { background: #212730; }
-QTreeWidget::item:selected { background: #1f6feb; color: #ffffff; }
+QTreeWidget::item:selected {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #2d7dd2, stop:1 #1a5fa8);
+    color: #ffffff;
+    border-left: 3px solid #58a6ff;
+    border-radius: 2px;
+}
+QTreeWidget::item:selected:hover { background: #2d7dd2; }
 """
 
 CONFIG_PATH = os.path.expanduser('~/.openmd.config')
+UPDATE_CHECK_INTERVAL = 6 * 3600  # seconds
+
+__version__ = '1.4.18'
 
 
 def _load_user_css() -> str:
@@ -497,13 +509,161 @@ class FilePreviewWidget(QWidget):
 # opens in its own tab (with its own sidebar). DO NOT collapse to single-file.
 # ---------------------------------------------------------------------------
 
+class _UpdatePopup(QDialog):
+    """Non-modal, styled popup shown when a newer openmd version is available."""
+
+    def __init__(self, current: str, latest: str, parent=None):
+        super().__init__(parent, Qt.WindowType.FramelessWindowHint | Qt.WindowType.Tool)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setModal(False)
+
+        # Outer frame
+        frame = QFrame(self)
+        frame.setObjectName('updateFrame')
+        frame.setStyleSheet("""
+            QFrame#updateFrame {
+                background: #1c2128;
+                border: 1px solid #30363d;
+                border-radius: 10px;
+            }
+            QLabel { color: #c9d1d9; }
+            QPushButton {
+                background: #238636;
+                color: #ffffff;
+                border: none;
+                border-radius: 5px;
+                padding: 6px 14px;
+                font-size: 13px;
+            }
+            QPushButton:hover { background: #2ea043; }
+            QPushButton#dismiss {
+                background: #21262d;
+                color: #8b949e;
+                border: 1px solid #30363d;
+            }
+            QPushButton#dismiss:hover { background: #30363d; color: #c9d1d9; }
+        """)
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 0, 0, 0)
+        outer.addWidget(frame)
+
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(20, 16, 20, 16)
+        layout.setSpacing(10)
+
+        title = QLabel('\U0001f4e6  openmd update available')
+        title.setStyleSheet('font-size: 15px; font-weight: bold; color: #58a6ff;')
+        layout.addWidget(title)
+
+        msg = QLabel(
+            f'You are on <b>v{current}</b>. '
+            f'Version <b>v{latest}</b> is available on PyPI.'
+        )
+        msg.setWordWrap(True)
+        layout.addWidget(msg)
+
+        cmd_label = QLabel('To upgrade, run:')
+        layout.addWidget(cmd_label)
+
+        cmd_box = QLabel('pip install --upgrade openmd')
+        cmd_box.setStyleSheet(
+            'background: #0d1117; color: #79c0ff; font-family: monospace; '
+            'font-size: 13px; padding: 8px 12px; border-radius: 6px; '
+            'border: 1px solid #30363d;'
+        )
+        cmd_box.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        layout.addWidget(cmd_box)
+
+        btn_row = QHBoxLayout()
+        btn_row.setSpacing(8)
+        dismiss_btn = QPushButton('Dismiss')
+        dismiss_btn.setObjectName('dismiss')
+        dismiss_btn.clicked.connect(self.close)
+        btn_row.addStretch()
+        btn_row.addWidget(dismiss_btn)
+        layout.addLayout(btn_row)
+
+        self.setFixedWidth(380)
+        self.adjustSize()
+
+    def show_near_parent(self):
+        """Position in the bottom-right corner of the parent window."""
+        if self.parent():
+            pr = self.parent().geometry()
+            x = pr.right() - self.width() - 20
+            y = pr.bottom() - self.height() - 20
+            self.move(x, y)
+        self.show()
+        self.raise_()
+
+
+def _check_for_update(current_version: str, cfg: configparser.ConfigParser,
+                      callback) -> None:
+    """Run in a background thread. Calls callback(latest_version) if newer.
+
+    Respects a 6-hour cooldown stored in ~/.openmd.config so PyPI is not
+    queried on every launch.
+    """
+    now = time.time()
+    last_check = float(cfg.get('update', 'last_check', fallback='0'))
+    if now - last_check < UPDATE_CHECK_INTERVAL:
+        return
+
+    try:
+        url = 'https://pypi.org/pypi/openmd/json'
+        req = urllib.request.Request(url, headers={'User-Agent': 'openmd-update-check'})
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            data = json.loads(resp.read())
+        latest = data['info']['version']
+
+        # Persist the check timestamp regardless of outcome
+        if not cfg.has_section('update'):
+            cfg.add_section('update')
+        cfg.set('update', 'last_check', str(now))
+        _save_config(cfg)
+
+        def _parse(v):
+            try:
+                return tuple(int(x) for x in v.split('.'))
+            except Exception:
+                return (0,)
+
+        if _parse(latest) > _parse(current_version):
+            callback(latest)
+    except Exception:
+        pass  # silently ignore network errors
+
+
 class MDPreviewWindow(QMainWindow):
-    def __init__(self, tab_widget: QTabWidget):
+    def __init__(self, tab_widget: QTabWidget, cfg: configparser.ConfigParser):
         super().__init__()
         self.setCentralWidget(tab_widget)
-        self.setWindowTitle("openmd by RufusLin")
+        self.setWindowTitle(f'openmd ({__version__}) by RufusLin')
         self.resize(QSize(1200, 1000))
         self.tab_widget = tab_widget
+        self._cfg = cfg
+        self._update_popup = None
+
+        # Kick off update check in background after a short delay so the
+        # window has time to appear before any popup is shown.
+        QTimer.singleShot(3000, self._start_update_check)
+
+    def _start_update_check(self):
+        thread = threading.Thread(
+            target=_check_for_update,
+            args=(__version__, self._cfg, self._on_update_found),
+            daemon=True,
+        )
+        thread.start()
+
+    def _on_update_found(self, latest: str):
+        """Called from background thread — must schedule UI work on main thread."""
+        QTimer.singleShot(0, lambda: self._show_update_popup(latest))
+
+    def _show_update_popup(self, latest: str):
+        self._update_popup = _UpdatePopup(__version__, latest, parent=self)
+        self._update_popup.show_near_parent()
 
     def keyPressEvent(self, event):
         if event.key() == Qt.Key_Escape:
@@ -617,7 +777,7 @@ def main():
         for f in md_files:
             widget = FilePreviewWidget(f, cfg)
             tab_widget.addTab(widget, os.path.basename(f))
-        window = MDPreviewWindow(tab_widget)
+        window = MDPreviewWindow(tab_widget, cfg)
         window.show()
         sys.exit(app.exec())
     except Exception as e:
