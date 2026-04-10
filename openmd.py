@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# Version: 1.4.18
+# Version: 1.4.19
 # Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 # openmd.py - Simple Markdown previewer with sidebar TOC
@@ -86,7 +86,7 @@ QTreeWidget::item:selected:hover { background: #2d7dd2; }
 CONFIG_PATH = os.path.expanduser('~/.openmd.config')
 UPDATE_CHECK_INTERVAL = 6 * 3600  # seconds
 
-__version__ = '1.4.18'
+__version__ = '1.4.19'
 
 
 def _load_user_css() -> str:
@@ -396,6 +396,19 @@ class FilePreviewWidget(QWidget):
             toc_html = ""
         return html_body, toc_html
 
+    # Map common MIME types to file extensions for the image cache.
+    _MIME_TO_EXT = {
+        'image/svg+xml': '.svg',
+        'image/png': '.png',
+        'image/jpeg': '.jpg',
+        'image/gif': '.gif',
+        'image/webp': '.webp',
+        'image/avif': '.avif',
+        'image/bmp': '.bmp',
+        'image/x-icon': '.ico',
+        'image/tiff': '.tiff',
+    }
+
     def _cache_remote_images(self, html_body: str) -> str:
         """Download remote http/https images to a temp cache dir and rewrite src.
 
@@ -403,8 +416,12 @@ class FilePreviewWidget(QWidget):
         LocalContentCanAccessRemoteUrls. This workaround fetches remote images
         once, caches them by URL hash in tempfile.gettempdir(), and rewrites
         the <img src> to a local file:// path so Qt can display them.
-        Uses BeautifulSoup for robust attribute parsing (handles all quote styles
-        and HTML-encoded URLs).
+
+        The file extension is determined by (in order of preference):
+          1. The Content-Type response header (most reliable — handles SVG badges
+             and other URLs that have no file extension in the path)
+          2. The URL path extension
+          3. Fallback to .png
         """
         cache_dir = os.path.join(tempfile.gettempdir(), 'openmd_img_cache')
         os.makedirs(cache_dir, exist_ok=True)
@@ -415,20 +432,42 @@ class FilePreviewWidget(QWidget):
             url = img.get('src', '')
             if not url.startswith(('http://', 'https://')):
                 continue
+            # Use a hash of the URL as the cache key (without extension yet)
             url_hash = hashlib.md5(url.encode()).hexdigest()
-            # Guess extension from URL path component, default to .png
-            ext = os.path.splitext(url.split('?')[0])[1]
-            if not ext or len(ext) > 5:
-                ext = '.png'
-            cached_path = os.path.join(cache_dir, url_hash + ext)
-            if not os.path.exists(cached_path):
-                try:
-                    req = urllib.request.Request(url, headers={'User-Agent': 'openmd/1.0'})
-                    with urllib.request.urlopen(req, timeout=10) as resp:
-                        with open(cached_path, 'wb') as f:
-                            f.write(resp.read())
-                except Exception:
-                    continue  # leave src unchanged on error
+
+            # Check if any cached file with this hash already exists
+            # (extension may vary, so glob for it)
+            existing = None
+            for candidate in os.listdir(cache_dir):
+                if candidate.startswith(url_hash):
+                    existing = os.path.join(cache_dir, candidate)
+                    break
+
+            if existing:
+                img['src'] = QUrl.fromLocalFile(existing).toString()
+                modified = True
+                continue
+
+            # Not cached — download and determine extension from Content-Type
+            try:
+                req = urllib.request.Request(url, headers={'User-Agent': 'openmd/1.0'})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    data = resp.read()
+                    content_type = resp.headers.get('Content-Type', '').split(';')[0].strip().lower()
+
+                # Determine extension: Content-Type first, then URL path, then default
+                ext = self._MIME_TO_EXT.get(content_type)
+                if not ext:
+                    ext = os.path.splitext(url.split('?')[0])[1]
+                if not ext or len(ext) > 5:
+                    ext = '.png'
+
+                cached_path = os.path.join(cache_dir, url_hash + ext)
+                with open(cached_path, 'wb') as f:
+                    f.write(data)
+            except Exception:
+                continue  # leave src unchanged on error
+
             img['src'] = QUrl.fromLocalFile(cached_path).toString()
             modified = True
 
