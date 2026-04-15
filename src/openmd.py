@@ -23,7 +23,7 @@
 # -------------------------------------------------
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 
-__version__ = '1.4.26'
+__version__ = '1.4.27'
 
 import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess, threading, time, json, html, textwrap
 import urllib.request
@@ -31,6 +31,9 @@ try:
     import yaml
 except ImportError:
     yaml = None
+
+os.environ.setdefault("QTWEBENGINE_DISABLE_SANDBOX", "1")
+os.environ.setdefault("QT_QUICK_BACKEND", "software")
 
 # Try to import curses for file picker; fallback to simple list
 try:
