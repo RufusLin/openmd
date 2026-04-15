@@ -6,7 +6,7 @@ I got tired of reading raw Markdown with `less` or opening VS Code/Cursor just t
 
 Run `openmd *.md` (or any Markdown files) from the shell and a window pops up instantly — the shell prompt returns immediately, no blocking, no `&` needed.
 
-![Python 3.8+](https://img.shields.io/badge/python-3.8%2B-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Platform: macOS / Linux](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey) ![PyPI version](https://img.shields.io/pypi/v/openmd)
+![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Platform: macOS / Linux](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey) ![PyPI version](https://img.shields.io/pypi/v/openmd)
 
 **GitHub:** [RufusLin/openmd](https://github.com/RufusLin/openmd)
 
@@ -124,6 +124,15 @@ pip install openmd
 ```
 
 After installing, the `openmd` command is available in your shell.
+
+### macOS Installation (IMPORTANT)
+
+The default `python3` on macOS is still Python 3.9, which is **not supported**.
+
+**Easiest way (recommended – auto-handles everything):**
+```bash
+brew install uv
+uv tool install openmd
 
 ### From source
 
