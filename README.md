@@ -46,7 +46,7 @@ openmd docs/*.md
 Add to your `~/.zshrc` or `~/.bashrc`:
 
 ```zsh
-openmd() { "$HOME/lab/openmd/openmd.py" "$@" 2>&1 }
+openmd() { "$HOME/lab/openmd/openmd" "$@" 2>&1 }
 ```
 
 Or if installed via pip, the `openmd` command is already in your `PATH`.
@@ -66,20 +66,23 @@ remotemd() {
 
 ## Features
 
+- **Meta panel** — shows YAML front‑matter in a hidden-by-default div; toggle via the **META** button or the **M** shortcut key
+- **Quick Help** — access a concise help dialog with navigation and shortcuts via the **HELP** button or the **H** shortcut key
 - **Instant launch** — the shell prompt returns immediately; openmd runs as a fully detached GUI app (no `&` needed, no blocking)
 - **GitHub-dark theme by default** — comfortable reading in low-light environments
 - **16 built-in themes** — dark and light, switch instantly via the swatch bar at the bottom of the sidebar; fully customizable via `.openmd.css`
 - **Live reload** — the preview updates instantly when the file is saved; no manual refresh needed
 - **Mermaid diagrams** — fenced ` ```mermaid ` blocks render automatically via CDN
 - **KaTeX math** — inline `$…$` and display `$$…$$` expressions render out of the box
-- **Collapsible sidebar TOC** — hierarchical (H1 → H2 → H3); click or press Return to jump to any heading
+- **Sidebar TOC** — hierarchical (H1 → H2 → H3); click or press Return to jump to any heading. The sidebar takes up 20% of your screen, and you can easily jump between the sidebar and display using the left/right arrow keys.
+- **Dynamic Pane Focus** — unselected panes automatically dim to 60% opacity so you always know exactly where your keyboard focus is.
 - **Multi-file tabs** — pass multiple `.md` files (even `*.md` globs) and each opens in its own tab, max 6
 - **Interactive file picker** — run with no arguments and choose from `.md` files in the current directory via a curses-based picker
 - **Remote image caching** — remote images in your Markdown are downloaded to a local temp cache so they render correctly in the Qt WebEngine view
 - **External link handling** — clicking any `http`/`https` link opens it in your default browser; the preview window never navigates away
 - **Update notifications** — on startup, openmd quietly checks PyPI (at most once every 6 hours) and shows a non-intrusive popup if a newer version is available
 - **Version in title bar** — the window title shows the running version for quick reference
-- **Keyboard shortcuts** — `Esc` closes the window; arrow keys and Return navigate the sidebar
+- **Keyboard shortcuts** — `Esc` closes the window; Up/Down arrows and Return navigate the sidebar, Left/Right switch panes, and Cmd+Left/Right switch tabs
 
 ---
 
@@ -106,6 +109,7 @@ To switch themes programmatically, add `body.theme-yourname { ... }` blocks to y
 - [PySide6](https://pypi.org/project/PySide6/) + PySide6-WebEngine
 - [Markdown](https://pypi.org/project/Markdown/)
 - [BeautifulSoup4](https://pypi.org/project/beautifulsoup4/)
+- [PyYAML](https://pypi.org/project/PyYAML/)
 
 **Note:** Mermaid and KaTeX require an internet connection to load from CDN.
 
@@ -137,7 +141,12 @@ pip install -e .
 |-----|--------|
 | `Esc` | Close the preview window |
 | `↑` / `↓` | Navigate the sidebar TOC |
+| `←` / `→` | Move focus between sidebar and display |
+| `Cmd + ← / →` | Navigate among tabs |
+| `Cmd + Shift + < / >` | Change font size |
 | `Return` | Jump to selected heading |
+| `M` | Toggle Meta Panel (YAML front-matter) |
+| `H` | Show Quick Help dialog |
 
 ---
 

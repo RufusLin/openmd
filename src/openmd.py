@@ -1,14 +1,10 @@
 #!/usr/bin/env python3
-# Version: 1.4.19
-# Added hierarchical QTreeWidget TOC sidebar (H1→top, H2→children, H3→grandchildren).
-# Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
-# openmd.py - Simple Markdown previewer with sidebar TOC
+# openmd.py - Simple Markdown previewer for MacOS, Unix, with sidebar TOC
+# by Rufus Lin, 2026
+# Open source: GitHub RufusLin/openmd or directly install: pip install openmd
 # -------------------------------------------------
-# This script is invoked by shell aliases defined in ~/.zshrc:
-#
-#   localmd() {
-#       $MD_VIEWER_PY $MD_VIEWER_SCRIPT "$@" >/dev/null 2>&1 &
-#   }
+# This script is invoked by "openmd <md-file>" after "pip install openmd".
+# Remote files over ssh can also be opened with a shell alias defined in ~/.zshrc:
 #
 #   remotemd() {
 #       local remote_path="$1"
@@ -25,9 +21,16 @@
 # then runs this script on that copy. No glob expansion or remote file fetching is
 # performed inside the Python code.
 # -------------------------------------------------
+# Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 
-import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess, threading, time, json
+__version__ = '1.4.21'
+
+import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess, threading, time, json, html, textwrap
 import urllib.request
+try:
+    import yaml
+except ImportError:
+    yaml = None
 
 # Try to import curses for file picker; fallback to simple list
 try:
@@ -38,11 +41,11 @@ except Exception:
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout,
     QHBoxLayout, QSplitter, QTreeWidget, QTreeWidgetItem, QPushButton,
-    QDialog, QLabel, QFrame,
+    QDialog, QLabel, QFrame, QGraphicsOpacityEffect,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl, QTimer
-from PySide6.QtGui import QKeyEvent, QColor, QDesktopServices
+from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl, QTimer, Signal
+from PySide6.QtGui import QKeyEvent, QColor, QDesktopServices, QShortcut, QKeySequence
 from PySide6.QtWebEngineCore import QWebEnginePage, QWebEngineSettings, QWebEngineProfile
 from bs4 import BeautifulSoup
 
@@ -56,6 +59,12 @@ pre {
     background-color: #161b22; padding: 16px; border-radius: 6px; border: 1px solid #30363d;
     overflow: auto; font-family: "SFMono-Regular", Consolas, monospace; 
 }
+
+#meta { 
+    background-color: rgba(110,118,129,0.4); padding: 16px; border-radius: 6px; border: 1px solid #30363d;
+    overflow: auto; font-family: "SFMono-Regular", Consolas, monospace; 
+    margin-bottom: 1.5rem; white-space: pre-wrap; 
+}
 code { background-color: rgba(110,118,129,0.4); padding: 0.2em 0.4em; border-radius: 6px; font-size: 85%; }
 table { border-collapse: collapse; width: 100%; margin: 24px 0; border: 1px solid #30363d; }
 table th, table td { border: 1px solid #30363d; padding: 8px 12px; }
@@ -65,11 +74,18 @@ h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: inherit; text-decoration: none; }
 
 # Sidebar Qt stylesheet
 SIDEBAR_CSS = """
+QWidget#sidebarCol {
+    background: #161b22;
+    border-right: 1px solid #30363d;
+}
 QTreeWidget {
     background: #161b22;
     color: #c9d1d9;
-    border-right: 1px solid #30363d;
+    border: 2px solid transparent;
     font-size: 14px;
+}
+QTreeWidget:focus {
+    border: 2px solid #58a6ff;
 }
 QTreeWidget::item { padding: 2px 0; }
 QTreeWidget::item:hover { background: #212730; }
@@ -80,13 +96,47 @@ QTreeWidget::item:selected {
     border-left: 3px solid #58a6ff;
     border-radius: 2px;
 }
+QTreeWidget::item:selected:!active {
+    background: #30363d;
+    color: #8b949e;
+    border-left: 3px solid #484f58;
+}
 QTreeWidget::item:selected:hover { background: #2d7dd2; }
+
+QPushButton#metaBtn, QPushButton#helpBtn {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #4caf50, stop:0.4 #43a047, stop:0.5 #388e3c, stop:1 #2e7d32);
+    border: 1px solid #1b5e20;
+    border-bottom: 2px solid #003300;
+    border-radius: 4px; color: white;
+    font-weight: bold;
+    font-size: 10px;
+    padding: 0 10px;
+}
+QPushButton#metaBtn:hover, QPushButton#helpBtn:hover {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #66bb6a, stop:0.4 #4caf50, stop:0.5 #43a047, stop:1 #388e3c);
+}
+QPushButton#metaBtn:pressed, QPushButton#helpBtn:pressed {
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 #2e7d32, stop:1 #388e3c);
+    border-bottom: 1px solid #003300;
+}
+"""
+
+# Web view focus styling
+VIEW_CSS = """
+QWebEngineView {
+    border: 2px solid transparent;
+}
+QWebEngineView:focus {
+    border: 2px solid #58a6ff;
+}
 """
 
 CONFIG_PATH = os.path.expanduser('~/.openmd.config')
 UPDATE_CHECK_INTERVAL = 6 * 3600  # seconds
 
-__version__ = '1.4.19'
 
 
 def _load_user_css() -> str:
@@ -99,6 +149,7 @@ def _load_user_css() -> str:
         os.path.join(os.getcwd(), '.openmd.css'),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), '.openmd.css'),
         os.path.expanduser('~/.openmd.css'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), 'openmd-default.css'),
     ]
     for path in candidates:
         if os.path.isfile(path):
@@ -151,6 +202,10 @@ def _parse_themes(css_text: str) -> list[tuple[str, str]]:
 def _load_config() -> configparser.ConfigParser:
     cfg = configparser.ConfigParser()
     cfg.read(CONFIG_PATH, encoding='utf-8')
+    if not cfg.has_section('display'):
+        cfg.add_section('display')
+    if not cfg.has_option('display', 'show_meta'):
+        cfg.set('display', 'show_meta', 'false')
     return cfg
 
 
@@ -178,6 +233,7 @@ class _OpenMDPage(QWebEnginePage):
     The Qt window itself never navigates away from the rendered markdown.
     All other schemes (data:, file:, about:) are allowed through normally.
     """
+    focusSidebarRequested = Signal()
 
     def acceptNavigationRequest(self, url, nav_type, is_main_frame):
         scheme = url.scheme()
@@ -189,23 +245,85 @@ class _OpenMDPage(QWebEnginePage):
             return False  # block in-window navigation regardless
         return True  # allow file://, data:, about:blank, anchor jumps, etc.
 
+    def javaScriptConsoleMessage(self, level, message, line, source):
+        if "FOCUS_SIDEBAR" in message:
+            self.focusSidebarRequested.emit()
+        super().javaScriptConsoleMessage(level, message, line, source)
 
-class _SidebarTree(QTreeWidget):
-    """QTreeWidget that fires itemClicked when Return/Enter is pressed."""
 
-    def keyPressEvent(self, event: QKeyEvent):
-        if event.key() in (Qt.Key_Return, Qt.Key_Enter):
-            item = self.currentItem()
-            if item:
-                self.itemClicked.emit(item, 0)
+class _HelpDialog(QDialog):
+    """Custom help dialog that handles Escape and Return keys."""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("openmd – Quick Help")
+        self.setModal(True)
+        self.resize(690, 520)  # 15% wider (600 * 1.15)
+        self.layout = QVBoxLayout(self)
+        self.layout.setContentsMargins(0, 0, 0, 0)
+
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key_Escape, Qt.Key_Return, Qt.Key_Enter):
+            self.accept()
         else:
             super().keyPressEvent(event)
+
+
+class _HelpPage(QWebEnginePage):
+    """Page for help modal that handles the close signal via console."""
+    closeRequested = Signal()
+
+    def acceptNavigationRequest(self, url, _type, isMainFrame):
+        if url.scheme() in ('http', 'https'):
+            QDesktopServices.openUrl(url)
+            return False
+        return super().acceptNavigationRequest(url, _type, isMainFrame)
+
+    def javaScriptConsoleMessage(self, level, message, line, source):
+        if "CLOSE_DIALOG" in message:
+            self.closeRequested.emit()
+        super().javaScriptConsoleMessage(level, message, line, source)
+
+
+class _SidebarTree(QTreeWidget):
+    """QTreeWidget with custom navigation and expansion logic."""
+    rightArrowPressed = Signal()
+    focusChanged = Signal(bool)
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.focusChanged.emit(True)
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.focusChanged.emit(False)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        key = event.key()
+        item = self.currentItem()
+
+        if key in (Qt.Key_Return, Qt.Key_Enter):
+            if item:
+                self.itemClicked.emit(item, 0)
+            event.accept()
+            return
+        elif key == Qt.Key_Space:
+            event.accept()
+            return
+        elif key == Qt.Key_Right:
+            self.rightArrowPressed.emit()
+            event.accept()
+            return
+        elif key == Qt.Key_Left:
+            event.accept()
+            return
+        
+        super().keyPressEvent(event)
 
 
 # ---------------------------------------------------------------------------
 # Per-file preview window: sidebar TOC (QTreeWidget) + QWebEngineView
 # ---------------------------------------------------------------------------
-# NOTE: This class renders a single markdown file with a collapsible sidebar.
+# NOTE: This class renders a single markdown file with a TOC sidebar.
 # The outer QTabWidget (in __main__) wraps multiple FilePreviewWidget instances
 # so that multi-file tab support is preserved. DO NOT collapse these into one.
 # ---------------------------------------------------------------------------
@@ -218,6 +336,8 @@ class FilePreviewWidget(QWidget):
         self.file_path = file_path
         self.cfg = shared_config
         self._current_theme = _get_saved_theme(self.cfg)
+        # Read meta visibility from config (default false)
+        self._show_meta = self.cfg.getboolean('display', 'show_meta', fallback=False)
 
         # KaTeX CDN snippets
         self._katex_css = '<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.css">'
@@ -225,10 +345,10 @@ class FilePreviewWidget(QWidget):
             '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/katex.min.js"></script>\n'
             '<script src="https://cdn.jsdelivr.net/npm/katex@0.16/dist/contrib/auto-render.min.js"></script>\n'
             '<script>'
-            'document.addEventListener("DOMContentLoaded",function(){'
+            'try { document.addEventListener("DOMContentLoaded",function(){'
             'if(window.renderMathInElement)renderMathInElement(document.body,{'
             'delimiters:[{left:"$$",right:"$$",display:true},{left:"$",right:"$",display:false}]'
-            '});});'
+            '});}); } catch(e) {}'
             '</script>'
         )
         # Mermaid: triggered via loadFinished + runJavaScript
@@ -242,8 +362,6 @@ class FilePreviewWidget(QWidget):
         self.sidebar = _SidebarTree()
         self.sidebar.setHeaderHidden(True)
         self.sidebar.setIndentation(16)
-        self.sidebar.setStyleSheet(SIDEBAR_CSS)
-        self.sidebar.setFixedWidth(220)
         self.sidebar.itemClicked.connect(self._jump_to_section)
         self._populate_sidebar(toc_html)
 
@@ -252,16 +370,49 @@ class FilePreviewWidget(QWidget):
 
         # --- Sidebar column: tree + swatch bar ---
         sidebar_col = QWidget()
-        sidebar_col.setFixedWidth(220)
+        sidebar_col.setObjectName("sidebarCol")
+        sidebar_col.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        sidebar_col.setStyleSheet(SIDEBAR_CSS)
+        
+        self.sidebar_opacity = QGraphicsOpacityEffect(self)
+        self.sidebar_opacity.setOpacity(1.0)
+        sidebar_col.setGraphicsEffect(self.sidebar_opacity)
+        self.sidebar.focusChanged.connect(lambda focused: self.sidebar_opacity.setOpacity(1.0 if focused else 0.6))
+        
         sidebar_layout = QVBoxLayout(sidebar_col)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
         sidebar_layout.setSpacing(0)
         sidebar_layout.addWidget(self.sidebar)
+
+        # --- Meta and Help buttons ---
+        self.meta_btn = QPushButton("META")
+        self.meta_btn.setObjectName("metaBtn")
+        self.meta_btn.setFixedHeight(26)
+        self.meta_btn.clicked.connect(self._toggle_meta)
+
+        self.help_btn = QPushButton("HELP")
+        self.help_btn.setObjectName("helpBtn")
+        self.help_btn.setFixedHeight(26)
+        self.help_btn.clicked.connect(self._show_help)
+
+        btn_row = QHBoxLayout()
+        btn_row.setContentsMargins(6, 4, 6, 4)
+        btn_row.setSpacing(4)
+        btn_row.addWidget(self.meta_btn)
+        btn_row.addWidget(self.help_btn)
+
+        sidebar_layout.addLayout(btn_row)
+        sidebar_layout.addSpacing(24)  # Spacer before swatches
         sidebar_layout.addWidget(self._swatch_bar)
 
         # --- Web view ---
         self.view = QWebEngineView()
-        self.view.setPage(_OpenMDPage(self.view))  # intercept external links
+        self.view.setStyleSheet(VIEW_CSS)
+        
+        page = _OpenMDPage(self.view)
+        page.focusSidebarRequested.connect(self.sidebar.setFocus)
+        self.view.setPage(page)  # intercept external links
+        
         # Allow local file:// pages to load remote https:// images and
         # local files from other directories (e.g. temp cache).
         # Must be set on both the profile and the view settings to take effect.
@@ -281,21 +432,40 @@ class FilePreviewWidget(QWidget):
         )
         self.view.setHtml(full_html, self._base_url)
 
+        # Now that view is initialized, connect sidebar right arrow
+        self.sidebar.rightArrowPressed.connect(self._focus_view)
+
         # --- Live reload ---
         self.watcher = QFileSystemWatcher(self)
         self.watcher.addPath(self.file_path)
         self.watcher.fileChanged.connect(self._reload)
 
         # --- Layout: sidebar left, preview right ---
+        screen_width = QApplication.primaryScreen().size().width()
         splitter = QSplitter(Qt.Horizontal)
         splitter.addWidget(sidebar_col)
         splitter.addWidget(self.view)
+        splitter.setSizes([int(screen_width * 0.2), int(screen_width * 0.8)])
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.addWidget(splitter)
+
+        # Keyboard shortcuts scoped to widgets
+        # Left arrow in preview pane takes you back to the sidebar TOC
+        self._shortcut_left = QShortcut(QKeySequence(Qt.Key_Left), self.view)
+        self._shortcut_left.setContext(Qt.WidgetWithChildrenShortcut)
+        self._shortcut_left.activated.connect(self.sidebar.setFocus)
+        # Right arrow in preview pane is disabled to prevent accidental scrolling
+        self._shortcut_right_disabled = QShortcut(QKeySequence(Qt.Key_Right), self.view)
+        self._shortcut_right_disabled.setContext(Qt.WidgetWithChildrenShortcut)
+
+    def _focus_view(self):
+        """Explicitly switch focus to the web view and its document."""
+        self.view.setFocus()
+        self.view.page().runJavaScript("window.focus();")
 
     def _build_swatch_bar(self) -> QWidget:
         """Build a row of colour swatches, one per theme found in .openmd.css."""
@@ -324,16 +494,11 @@ class FilePreviewWidget(QWidget):
         return bar
 
     def _apply_theme(self, theme_name: str):
-        """Apply a theme by setting a class on <body>.
-
-        The CSS uses descendant selectors (body.theme-xxx pre, body.theme-xxx code, etc.)
-        so setting the class on <body> alone is sufficient — all child elements inherit
-        the theme via normal CSS cascade.
-        """
+        """Apply a theme by setting a class on <body>."""
         self._current_theme = theme_name
         _set_saved_theme(self.cfg, theme_name)
         self.view.page().runJavaScript(
-            f"document.body.className = 'theme-{theme_name}';"
+            "try { if(document.body) document.body.className = 'theme-" + theme_name + "'; } catch(e) {}"
         )
 
     def _populate_sidebar(self, toc_html: str):
@@ -377,11 +542,34 @@ class FilePreviewWidget(QWidget):
         try:
             with open(file_path, 'r', encoding='utf-8') as fh:
                 raw = fh.read()
+            # Extract front-matter (YAML block between --- markers)
+            yaml_str, body_md = self._extract_front_matter(raw)
+            
+            # STABILITY FIX: Use dedent to handle selected text fragments that carry
+            # uniform indentation (common when selecting from terminal or indented blocks).
+            # This prevents them from being parsed as verbatim code blocks.
+            body_md = textwrap.dedent(body_md).strip()
+
+            # Generate hidden meta HTML from YAML if yaml is available
+            self._meta_html = ""
+            if yaml and yaml_str:
+                try:
+                    data = yaml.safe_load(yaml_str)
+                    pretty = yaml.dump(data, default_flow_style=False, sort_keys=False)
+                    escaped = html.escape(pretty).replace('\n', '<br>')
+                    visibility = 'visible' if self._show_meta else 'hidden'
+                    display = 'block' if self._show_meta else 'none'
+                    self._meta_html = (
+                        f'<div id="meta" style="visibility:{visibility}; display:{display};">'
+                        f'{escaped}</div>'
+                    )
+                except Exception:
+                    pass
             md = markdown.Markdown(
                 extensions=['toc', 'extra', 'sane_lists'],
                 extension_configs={'toc': {'permalink': False, 'anchorlink': True}},
             )
-            html_body = md.convert(raw)
+            html_body = md.convert(body_md)
             toc_html = md.toc
             soup = BeautifulSoup(html_body, 'html.parser')
             for code_tag in soup.find_all('code', class_='language-mermaid'):
@@ -394,7 +582,24 @@ class FilePreviewWidget(QWidget):
         except Exception as e:
             html_body = f"<pre>Error loading file: {e}</pre>"
             toc_html = ""
+            self._meta_html = ""
         return html_body, toc_html
+
+    def _extract_front_matter(self, raw: str) -> tuple[str, str]:
+        """Return (yaml_str, body_md). If no front-matter, returns ('', raw)."""
+        lines = raw.splitlines()
+        if len(lines) >= 2 and lines[0].strip() == '---' and lines[1].strip() != '---':
+            try:
+                # We join lines starting from the first line AFTER the opening ---
+                yaml_block = "\n".join(lines[1:])
+                parts = yaml_block.split('---', 1)
+                if len(parts) == 2 and parts[1].strip():
+                    yaml_str = parts[0].strip()
+                    body_md = "\n".join(parts[1].splitlines()[1:])
+                    return yaml_str, body_md
+            except Exception:
+                pass
+        return "", raw
 
     # Map common MIME types to file extensions for the image cache.
     _MIME_TO_EXT = {
@@ -507,20 +712,50 @@ class FilePreviewWidget(QWidget):
         body_class = f' class="theme-{self._current_theme}"' if self._current_theme else ''
         # Download remote images to local cache so Qt WebEngine can display them
         html_body = self._cache_remote_images(html_body)
+        # Append meta HTML if present (at the top) followed by body and CDN scripts
+        body_content = f"{self._meta_html}{html_body}{self._mermaid_script}{self._katex_script}"
+        # Show meta panel by default only if config says so
+        if self._show_meta:
+            body_content += '<script>try { var m=document.getElementById("meta"); if(m) m.style.visibility="visible"; } catch(e) {}</script>'
+        
+        # Add JS to catch ArrowLeft for focus switching and to show focus border
+        focus_script = """
+        <script>
+        document.body.style.transition = 'opacity 0.2s';
+        if (!document.hasFocus()) {
+            document.body.style.opacity = '0.6';
+        }
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowLeft') {
+                console.log('FOCUS_SIDEBAR');
+            }
+        });
+        window.addEventListener('focus', function() {
+            document.body.style.boxShadow = 'inset 0 0 0 4px #58a6ff';
+            document.body.style.opacity = '1.0';
+        });
+        window.addEventListener('blur', function() {
+            document.body.style.boxShadow = 'none';
+            document.body.style.opacity = '0.6';
+        });
+        </script>
+        """
+        body_content += focus_script
+
         return (
             f"<!DOCTYPE html><html><head><meta charset='utf-8'>{import_links}"
             f"<style>{combined_css}</style>{self._katex_css}</head>"
-            f"<body{body_class}>{html_body}{self._mermaid_script}{self._katex_script}</body></html>"
+            f"<body{body_class}>{body_content}</body></html>"
         )
 
     def _on_load_finished(self, ok: bool):
         """Trigger Mermaid rendering after page load."""
         if ok:
             self.view.page().runJavaScript(
-                "if(window.mermaid){"
+                "try { if(window.mermaid){"
                 "  mermaid.initialize({startOnLoad:false,theme:'dark'});"
                 "  mermaid.run();"
-                "}"
+                "} } catch(e) {}"
             )
 
     def _reload(self, _path: str = ""):
@@ -536,8 +771,137 @@ class FilePreviewWidget(QWidget):
         anchor = item.data(0, Qt.UserRole)
         if anchor:
             self.view.page().runJavaScript(
-                f"var el = document.getElementById('{anchor}'); if (el) el.scrollIntoView();"
+                "try { var el = document.getElementById('" + anchor + "'); if (el) el.scrollIntoView(); } catch(e) {}"
             )
+
+    def _toggle_meta(self):
+        """Toggle visibility of the hidden meta div in the rendered page."""
+        # Toggle via JavaScript: toggle both visibility and display with safety
+        self.view.page().runJavaScript(
+            "try {"
+            "    var meta = document.getElementById('meta');"
+            "    if (meta) {"
+            "        if (meta.style.display === 'none') {"
+            "            meta.style.display = 'block';"
+            "            meta.style.visibility = 'visible';"
+            "        } else {"
+            "            meta.style.display = 'none';"
+            "            meta.style.visibility = 'hidden';"
+            "        }"
+            "    }"
+            "} catch(e) {}"
+        )
+        # Update internal state and config
+        self._show_meta = not self._show_meta
+        self.cfg.set('display', 'show_meta', str(self._show_meta).lower())
+        _save_config(self.cfg)
+
+    def _zoom_in(self):
+        """Increase the zoom factor of the web view."""
+        self.view.setZoomFactor(self.view.zoomFactor() + 0.1)
+
+    def _zoom_out(self):
+        """Decrease the zoom factor of the web view."""
+        factor = self.view.zoomFactor() - 0.1
+        if factor > 0.2:
+            self.view.setZoomFactor(factor)
+
+    def _show_help(self):
+        """Show a concise help dialog with an animated SVG background."""
+        dlg = _HelpDialog(self)
+        # Use a QWebEngineView for the animated background
+        bg_view = QWebEngineView(dlg)
+        help_page = _HelpPage(bg_view)
+        bg_view.setPage(help_page)
+        help_page.closeRequested.connect(dlg.accept)
+
+        bg_view.setHtml("""
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+  body { margin: 0; overflow: hidden; background: #f8fffb; color: #000; font-family: -apple-system, sans-serif; }
+  svg { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 1; }
+  .content-wrapper { 
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+      z-index: 10; display: flex; flex-direction: column; padding: 15px 30px 30px 30px; box-sizing: border-box;
+  }
+  .help-body { flex: 1; overflow: auto; line-height: 1.5; font-size: 14px; }
+  .footer { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 10px; }
+  .credit { font-size: 10px; opacity: 0.7; color: #555; }
+  .credit a { text-decoration: none; color: inherit; cursor: pointer; }
+  .close-btn { 
+      background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #e1e1e1, stop:1 #a0a0a0);
+      border: 1px solid #707070; border-radius: 3px; color: #1a1a1a; 
+      padding: 6px 16px; font-weight: bold; font-size: 12px; cursor: pointer;
+  }
+  h2 { margin-top: 0; margin-bottom: 8px; color: #000; border-bottom: 1px solid rgba(0,0,0,0.1); }
+  ul { padding-left: 20px; margin-top: 5px; margin-bottom: 15px; }
+  li { margin-bottom: 4px; }
+  b { color: #000; }
+</style>
+</head>
+<body>
+<svg viewBox="0 0 1000 1000" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+  <defs><filter id="shadowBlur"><feGaussianBlur stdDeviation="50" /></filter></defs>
+  <circle r="350" fill="#7db" filter="url(#shadowBlur)">
+    <animateMotion path="M-200,500 Q500,-200 1200,500 T-200,500" dur="16s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="0.1; 0.5; 0.1" dur="15.2s" repeatCount="indefinite" />
+  </circle>
+  <path d="M-100,-100 C200,300 800,0 1100,200 S500,800 -100,1100" fill="#8ec" filter="url(#shadowBlur)">
+    <animateTransform attributeName="transform" type="rotate" from="0 500 500" to="360 500 500" dur="29.6s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="0.1; 0.3; 0.1" dur="18.4s" repeatCount="indefinite" />
+  </path>
+  <circle r="200" fill="#6da" filter="url(#shadowBlur)">
+    <animateMotion path="M1200,1200 Q500,500 -200,1200 T1200,1200" dur="20.8s" repeatCount="indefinite" />
+    <animate attributeName="opacity" values="0.05; 0.4; 0.05" dur="10.4s" repeatCount="indefinite" />
+  </circle>
+</svg>
+<div class="content-wrapper">
+    <div class="help-body">
+        <h2>Navigation:</h2>
+        <ul>
+            <li><b>↑ / ↓</b> – navigate sidebar sections</li>
+            <li><b>Page Up / Page Down</b> – scroll display</li>
+            <li><b>← / →</b> – move between sidebar and display</li>
+            <li><b>Cmd + Shift + &lt; / &gt;</b> – change font size</li>
+            <li><b>Cmd + ← / →</b> – navigate among tabs</li>
+            <li><b>ESC</b> – close markdown file</li>
+        </ul>
+        <h2>UI & Features:</h2>
+        <ul>
+            <li><b>Theme Swatches</b> – click to change colors instantly</li>
+            <li><b>Live Reload</b> – updates instantly when file is saved in your editor</li>
+            <li><b>Meta Panel (M)</b> – toggle YAML front-matter display</li>
+            <li><b>Help (H)</b> – this dialog</li>
+        </ul>
+        <h2>Tips:</h2>
+        <ul>
+            <li><b>macOS:</b> select markdown in other apps, right click and use Services/Open in openmd</li>
+            <li><b>Themes:</b> edit .openmd.css to make your own themes</li>
+        </ul>
+    </div>
+    <div class="footer">
+        <div class="credit">openmd by Rufus Lin (<a href="https://rufuslin.com">rufuslin.com</a>)</div>
+        <button class="close-btn" onclick="window.close()">Close</button>
+    </div>
+</div>
+<script>
+    window.close = function() {
+        console.log("CLOSE_DIALOG");
+    };
+    // Listen for Escape and Return keys inside the web view
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' || e.key === 'Enter') {
+            window.close();
+        }
+    });
+</script>
+</body>
+</html>
+""")
+        dlg.layout.addWidget(bg_view)
+        dlg.exec()
 
 
 # ---------------------------------------------------------------------------
@@ -684,9 +1048,94 @@ class MDPreviewWindow(QMainWindow):
         self._cfg = cfg
         self._update_popup = None
 
+        # Global shortcuts – M for meta, H for help (no text input in the app)
+        self._shortcut_meta = QShortcut(QKeySequence("M"), self)
+        self._shortcut_meta.setContext(Qt.WindowShortcut)
+        self._shortcut_meta.activated.connect(self._toggle_meta)
+        self._shortcut_help = QShortcut(QKeySequence("H"), self)
+        self._shortcut_help.setContext(Qt.WindowShortcut)
+        self._shortcut_help.activated.connect(self._show_help)
+        # Global Escape to quit
+        self._shortcut_quit = QShortcut(QKeySequence(Qt.Key_Escape), self)
+        self._shortcut_quit.setContext(Qt.WindowShortcut)
+        self._shortcut_quit.activated.connect(QApplication.quit)
+
+        # Font scaling shortcuts (Cmd+Shift+< and Cmd+Shift+>)
+        # Using multiple sequences to ensure it works across all keyboard layouts
+        self._shortcut_zoom_in = QShortcut(self)
+        self._shortcut_zoom_in.setKey(QKeySequence("Ctrl+Shift+>"))
+        self._shortcut_zoom_in.setContext(Qt.WindowShortcut)
+        self._shortcut_zoom_in.activated.connect(self._zoom_in)
+        
+        self._shortcut_zoom_out = QShortcut(self)
+        self._shortcut_zoom_out.setKey(QKeySequence("Ctrl+Shift+<"))
+        self._shortcut_zoom_out.setContext(Qt.WindowShortcut)
+        self._shortcut_zoom_out.activated.connect(self._zoom_out)
+
+        # Fallback for physical keys
+        self._shortcut_zoom_in_alt = QShortcut(QKeySequence(Qt.Modifier.CTRL | Qt.Modifier.SHIFT | Qt.Key.Key_Period), self)
+        self._shortcut_zoom_in_alt.activated.connect(self._zoom_in)
+        self._shortcut_zoom_out_alt = QShortcut(QKeySequence(Qt.Modifier.CTRL | Qt.Modifier.SHIFT | Qt.Key.Key_Comma), self)
+        self._shortcut_zoom_out_alt.activated.connect(self._zoom_out)
+
+        # Tab navigation shortcuts
+        self._shortcut_prev_tab = QShortcut(QKeySequence("Ctrl+Left"), self)
+        self._shortcut_prev_tab.setContext(Qt.WindowShortcut)
+        self._shortcut_prev_tab.activated.connect(self._prev_tab)
+        
+        self._shortcut_next_tab = QShortcut(QKeySequence("Ctrl+Right"), self)
+        self._shortcut_next_tab.setContext(Qt.WindowShortcut)
+        self._shortcut_next_tab.activated.connect(self._next_tab)
+
         # Kick off update check in background after a short delay so the
         # window has time to appear before any popup is shown.
         QTimer.singleShot(3000, self._start_update_check)
+
+    def _prev_tab(self):
+        """Switch to the previous tab with wraparound."""
+        count = self.tab_widget.count()
+        if count > 1:
+            idx = (self.tab_widget.currentIndex() - 1) % count
+            self.tab_widget.setCurrentIndex(idx)
+
+    def _next_tab(self):
+        """Switch to the next tab with wraparound."""
+        count = self.tab_widget.count()
+        if count > 1:
+            idx = (self.tab_widget.currentIndex() + 1) % count
+            self.tab_widget.setCurrentIndex(idx)
+
+    def _toggle_meta(self):
+        """Toggle visibility of the meta panel in the active tab."""
+        if self.tab_widget.count() == 0:
+            return
+        current = self.tab_widget.currentWidget()
+        if hasattr(current, '_toggle_meta'):
+            current._toggle_meta()
+
+    def _show_help(self):
+        """Show the help dialog from the active tab."""
+        if self.tab_widget.count() == 0:
+            return
+        current = self.tab_widget.currentWidget()
+        if hasattr(current, '_show_help'):
+            current._show_help()
+
+    def _zoom_in(self):
+        """Zoom in the active tab."""
+        if self.tab_widget.count() == 0:
+            return
+        current = self.tab_widget.currentWidget()
+        if hasattr(current, '_zoom_in'):
+            current._zoom_in()
+
+    def _zoom_out(self):
+        """Zoom out the active tab."""
+        if self.tab_widget.count() == 0:
+            return
+        current = self.tab_widget.currentWidget()
+        if hasattr(current, '_zoom_out'):
+            current._zoom_out()
 
     def _start_update_check(self):
         thread = threading.Thread(
@@ -772,12 +1221,204 @@ def pick_file_curses() -> str:
     return md_files[selected]
 
 
+def _ensure_macos_service():
+    """Silently install/update the 'Open in openmd' macOS service if on Darwin."""
+    if sys.platform != 'darwin':
+        return
+
+    service_path = os.path.expanduser('~/Library/Services/Open in openmd.workflow')
+    contents_path = os.path.join(service_path, 'Contents')
+    res_path = os.path.join(contents_path, 'Resources', 'English.lproj')
+    
+    try:
+        os.makedirs(res_path, exist_ok=True)
+        executable_path = os.path.abspath(sys.argv[0])
+
+        # Info.plist ensures the Service name is registered correctly
+        info_plist = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.rufuslin.openmd.service</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Open in openmd</string>
+	<key>CFBundlePackageType</key>
+	<string>BNDL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Open in openmd</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>runWorkflow</string>
+			<key>NSPortName</key>
+			<string>com.rufuslin.openmd.service</string>
+			<key>NSSendTypes</key>
+			<array>
+				<string>public.plain-text</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
+"""
+        with open(os.path.join(contents_path, 'Info.plist'), 'w', encoding='utf-8') as f:
+            f.write(info_plist)
+
+        # Localized name ensures macOS displays it correctly in the menu
+        strings_content = '"Open in openmd" = "Open in openmd";\n'
+        with open(os.path.join(res_path, 'ServicesMenu.strings'), 'w', encoding='utf-16') as f:
+            f.write(strings_content)
+
+        # document.wflow XML content
+        wflow_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>actions</key>
+	<array>
+		<dict>
+			<key>action</key>
+			<dict>
+				<key>AMActionVersion</key>
+				<string>2.0.3</string>
+				<key>ActionBundlePath</key>
+				<string>/System/Library/Automator/Run Shell Script.action</string>
+				<key>ActionName</key>
+				<string>Run Shell Script</string>
+				<key>ActionParameters</key>
+				<dict>
+					<key>COMMAND_STRING</key>
+					<string>TS=$(date +%s)
+temp_file="/tmp/openmd_selection_$TS.md"
+cat &gt; "$temp_file"
+nohup "{executable_path}" "$temp_file" &gt;/dev/null 2&gt;&amp;1</string>
+					<key>CheckedForUserDefaultShell</key>
+					<true/>
+					<key>inputMethod</key>
+					<integer>0</integer>
+					<key>shell</key>
+					<string>/bin/bash</string>
+					<key>source</key>
+					<string></string>
+				</dict>
+				<key>BundleIdentifier</key>
+				<string>com.apple.RunShellScript</string>
+				<key>CFBundleVersion</key>
+				<string>2.0.3</string>
+				<key>CanShowSelectedItemsWhenRun</key>
+				<false/>
+				<key>CanShowWhenRun</key>
+				<true/>
+				<key>Category</key>
+				<array>
+					<string>AMCategoryUtilities</string>
+				</array>
+				<key>Class Name</key>
+				<string>RunShellScriptAction</string>
+				<key>InputUUID</key>
+				<string>9B6B676B-066F-4C2E-8E5A-7A574E987E01</string>
+				<key>Keywords</key>
+				<array>
+					<string>Shell</string>
+					<string>Script</string>
+					<string>Command</string>
+					<string>Run</string>
+					<string>Unix</string>
+				</array>
+				<key>OutputUUID</key>
+				<string>E8D8E9E8-0D9E-4D9E-8D9E-8E9D8E9D8E9D</string>
+				<key>UUID</key>
+				<string>9B6B676B-066F-4C2E-8E5A-7A574E987E02</string>
+				<key>UnlocalizedApplications</key>
+				<array>
+					<string>Automator</string>
+				</array>
+				<key>arguments</key>
+				<dict>
+					<key>0</key>
+					<dict>
+						<key>default value</key>
+						<integer>0</integer>
+						<key>name</key>
+						<string>inputMethod</string>
+						<key>required</key>
+						<string>0</string>
+						<key>type</key>
+						<string>0</string>
+						<key>uuid</key>
+						<string>0</string>
+					</dict>
+					<key>4</key>
+					<dict>
+						<key>default value</key>
+						<string>/bin/sh</string>
+						<key>name</key>
+						<string>shell</string>
+						<key>required</key>
+						<string>0</string>
+						<key>type</key>
+						<string>0</string>
+						<key>uuid</key>
+						<string>4</string>
+					</dict>
+				</dict>
+			</dict>
+		</dict>
+	</array>
+	<key>workflowMetaData</key>
+	<dict>
+		<key>serviceInputTypeIdentifier</key>
+		<string>com.apple.Automator.text</string>
+		<key>serviceOutputTypeIdentifier</key>
+		<string>com.apple.Automator.nothing</string>
+		<key>serviceProcessesInput</key>
+		<integer>0</integer>
+		<key>workflowTypeIdentifier</key>
+		<string>com.apple.Automator.servicesMenu</string>
+	</dict>
+</dict>
+</plist>
+"""
+        with open(os.path.join(contents_path, 'document.wflow'), 'w', encoding='utf-8') as f:
+            f.write(wflow_content)
+
+        # Force macOS to recognize the updated bundle and its name
+        ls_reg = "/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister"
+        subprocess.run([ls_reg, "-f", service_path], capture_output=True)
+        # Flush the pasteboard services cache
+        subprocess.run(["/System/Library/CoreServices/pbs", "-flush"], capture_output=True)
+
+    except Exception:
+        pass
+
+
 # ---------------------------------------------------------------------------
 # Entry point
 # ---------------------------------------------------------------------------
 
 def main():
     """Entry point — used both by direct invocation and by the pip console script."""
+    # Ensure macOS service is installed first
+    _ensure_macos_service()
+
+    # Determine files to open
     if len(sys.argv) < 2:
         file_path = pick_file_curses()
         md_files = [file_path]
@@ -790,19 +1431,13 @@ def main():
             sys.stderr.write("Warning: more than 6 files supplied; showing first 6.\n")
             md_files = md_files[:6]
 
-    # Re-exec as a detached child so the shell prompt returns immediately.
-    # Using subprocess.Popen instead of os.fork() avoids the macOS
-    # DeprecationWarning about fork() in a multi-threaded process (Qt/ObjC
-    # runtime threads are already running by the time main() is called).
-    # The _OPENMD_CHILD env var prevents the child from re-spawning itself.
-    # start_new_session=True is the setsid() equivalent — detaches from the
-    # terminal's process group so SIGHUP on terminal close does not reach it.
-    # Skip on Windows (no start_new_session support in the same way).
+    # Re-exec as a detached child if needed
     if sys.platform != 'win32' and os.environ.get('_OPENMD_CHILD') != '1':
         env = os.environ.copy()
         env['_OPENMD_CHILD'] = '1'
+        # Pass the (potentially picked) file as an argument to the child
         subprocess.Popen(
-            [sys.executable] + sys.argv,
+            [sys.executable] + [sys.argv[0]] + md_files,
             env=env,
             start_new_session=True,
             close_fds=True,
@@ -810,6 +1445,7 @@ def main():
         os._exit(0)
 
     try:
+        # Standard Qt app startup
         app = QApplication(sys.argv)
         cfg = _load_config()
         tab_widget = QTabWidget()
@@ -820,7 +1456,7 @@ def main():
         window.show()
         sys.exit(app.exec())
     except Exception as e:
-        sys.stderr.write(f"Fatal error while building the preview window: {type(e).__name__}: {e}\n")
+        sys.stderr.write(f"Fatal error: {type(e).__name__}: {e}\n")
         sys.exit(1)
 
 
