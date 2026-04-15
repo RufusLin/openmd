@@ -18,8 +18,8 @@ X: @rufuslinjapan
 
 ## What it looks like
 
-![openmd with multiple tabs and TOC sidebar](https://raw.githubusercontent.com/RufusLin/openmd/main/pix/1.png)
-![Mermaid diagram and KaTeX math rendered](https://raw.githubusercontent.com/RufusLin/openmd/main/pix/2.png)
+<img src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/1.png" width="80%" alt="openmd with multiple tabs and TOC sidebar">
+<img src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/2.png" width="80%" alt="Mermaid diagram and KaTeX math rendered">
 
 *(Click any image to enlarge)*
 
@@ -49,7 +49,7 @@ Add to your `~/.zshrc` or `~/.bashrc`:
 openmd() { "$HOME/lab/openmd/openmd" "$@" 2>&1 }
 ```
 
-Or if installed via pip, the `openmd` command is already in your `PATH`.
+Or after installing with `pipx` or `pip`, the `openmd` command is already in your `PATH`.
 
 ### Remote preview via SSH (optional)
 
@@ -115,41 +115,36 @@ To switch themes programmatically, add `body.theme-yourname { ... }` blocks to y
 
 ---
 
-## Installation
+##Installation
 
-### pip (recommended)
+###macOS (recommended)
+
+The default python3 on macOS is still Python 3.9, which is not supported.
+
+```
+brew install pipx
+pipx install openmd
+```
+
+After this, the openmd command will be available in your shell.
+
+###Linux
 
 ```
 pip install openmd
 ```
 
-After installing, the `openmd` command is available in your shell.
+After this, the openmd command will be available in your shell.
 
-### macOS Installation (IMPORTANT)
-
-The default `python3` on macOS is still Python 3.9, which is **not supported**.
-
-**Easiest & recommended (auto-handles Python):**
-
-```
-brew install uv
-uv tool install openmd
-```
-
-**Alternative with plain Homebrew:**
-
-```
-brew install python          # installs the latest Python 3
-python3 -m pip install openmd
-```
-
-### From source
+###From source
 
 ```
 git clone https://github.com/RufusLin/openmd.git
 cd openmd
 pip install -e .
 ```
+
+After this, the openmd command will be available in your shell.
 
 ---
 

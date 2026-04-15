@@ -14,8 +14,10 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@400;600;700&family=Lato:wght@400;700&family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&family=Source+Code+Pro:wght@400;600&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Cormorant+Garamond:wght@400;600&family=Raleway:wght@400;600&family=Space+Mono:wght@400;700&family=Libre+Baskerville:wght@400;700&family=PT+Serif:wght@400;700&family=Crimson+Pro:wght@400;600&family=Fira+Sans:wght@400;500&family=Ubuntu:wght@400;700&display=swap');
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@400;600;700&family=Lato:wght@400;700&family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&family=Source+Code+Pro:wght@400;600&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Cormorant+Garamond:wght@400;600&family=Raleway:wght@400;600&family=Space+Mono:wght@400;700&display=swap);
-
+/* ============================================================
+   Theme 1: stygian-darkness (default)
+   Dark charcoal background, warm off-white text
+   ============================================================ */
 body {
     font-family: "Inter", system-ui, sans-serif;
     line-height: 1.6;
@@ -25,19 +27,22 @@ body {
     padding: 2rem;
     background-color: #0d1117;
 }
-
-/* stygian-darkness (original) */
-body {
-    font-family: "Inter", system-ui, sans-serif;
-    line-height: 1.6;
-    color: #f0e8e8;
-    max-width: 900px;
-    margin: auto;
-    padding: 2rem;
-    background-color: #0d1117;
+body table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #30363d;
+}
+body table th,
+body table td {
+    border: 1px solid #30363d;
+    padding: 8px 12px;
 }
 
-/* Theme: outer-space */
+/* ============================================================
+   Theme 2: outer-space
+   Deep navy background, cyan-tinted text
+   ============================================================ */
 body.theme-outer-space {
     font-family: "Montserrat", sans-serif;
     color: #e0f7fa;
@@ -72,8 +77,25 @@ body.theme-outer-space h6 a {
     color: #b2ebf2;
     text-decoration: none;
 }
+body.theme-outer-space table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #30363d;
+}
+body.theme-outer-space table th,
+body.theme-outer-space table td {
+    border: 1px solid #30363d;
+    padding: 8px 12px;
+}
+body.theme-outer-space table tr:nth-child(even) {
+    background-color: #002b5c;
+}
 
-/* Theme: deep-ocean */
+/* ============================================================
+   Theme 3: deep-ocean
+   Dark blue background, teal-tinted text
+   ============================================================ */
 body.theme-deep-ocean {
     font-family: "Roboto", sans-serif;
     color: #e0f2f1;
@@ -108,8 +130,25 @@ body.theme-deep-ocean h6 a {
     color: #80deea;
     text-decoration: none;
 }
+body.theme-deep-ocean table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #30363d;
+}
+body.theme-deep-ocean table th,
+body.theme-deep-ocean table td {
+    border: 1px solid #30363d;
+    padding: 8px 12px;
+}
+body.theme-deep-ocean table tr:nth-child(even) {
+    background-color: #001f40;
+}
 
-/* Theme: burning-desert */
+/* ============================================================
+   Theme 4: burning-desert
+   Deep crimson background, warm pink-white text
+   ============================================================ */
 body.theme-burning-desert {
     font-family: "Merriweather", serif;
     color: #ffebee;
@@ -144,44 +183,25 @@ body.theme-burning-desert h6 a {
     color: #ff8a80;
     text-decoration: none;
 }
-
-/* Theme: cool-cucumber */
-body.theme-cool-cucumber {
-    font-family: "Nunito", sans-serif;
-    color: #e8f5e9;
-    background-color: #1b5e20;
+body.theme-burning-desert table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #7f1010;
 }
-body.theme-cool-cucumber pre {
-    background-color: #0d6c1f;
-    font-family: "Courier New", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #30363d;
-    overflow: auto;
+body.theme-burning-desert table th,
+body.theme-burning-desert table td {
+    border: 1px solid #7f1010;
+    padding: 8px 12px;
 }
-body.theme-cool-cucumber code {
-    background-color: rgba(29,87,31,0.4);
-    font-family: "Courier New", monospace;
-}
-body.theme-cool-cucumber pre code {
-    background-color: #004c11;
-    color: #a5d6a7;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-cool-cucumber a,
-body.theme-cool-cucumber h1 a,
-body.theme-cool-cucumber h2 a,
-body.theme-cool-cucumber h3 a,
-body.theme-cool-cucumber h4 a,
-body.theme-cool-cucumber h5 a,
-body.theme-cool-cucumber h6 a {
-    color: #a5d6a7;
-    text-decoration: none;
+body.theme-burning-desert table tr:nth-child(even) {
+    background-color: #8b0000;
 }
 
-/* Theme: light-pineapple (light background) */
+/* ============================================================
+   Theme 5: light-pineapple (light background)
+   Off-white background, dark charcoal text
+   ============================================================ */
 body.theme-light-pineapple {
     font-family: "Open Sans", sans-serif;
     color: #222222;
@@ -216,8 +236,25 @@ body.theme-light-pineapple h6 a {
     color: #333333;
     text-decoration: none;
 }
+body.theme-light-pineapple table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #c8c8c8;
+}
+body.theme-light-pineapple table th,
+body.theme-light-pineapple table td {
+    border: 1px solid #c8c8c8;
+    padding: 8px 12px;
+}
+body.theme-light-pineapple table tr:nth-child(even) {
+    background-color: #e4e4e4;
+}
 
-/* Theme: white-paper (light background) */
+/* ============================================================
+   Theme 6: white-paper (light background)
+   Pure white background, near-black text
+   ============================================================ */
 body.theme-white-paper {
     font-family: "Merriweather", serif;
     color: #222222;
@@ -252,368 +289,25 @@ body.theme-white-paper h6 a {
     color: #333333;
     text-decoration: none;
 }
-
-/* Theme: calm-sky (light background) */
-body.theme-calm-sky {
-    font-family: "Work Sans", sans-serif;
-    color: #2c3e50;
-    background-color: #e6f7ff;
+body.theme-white-paper table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #d0d0d0;
 }
-body.theme-calm-sky pre {
-    background-color: #d0e9ff;
-    font-family: "Source Code Pro", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #c0d8f0;
-    overflow: auto;
+body.theme-white-paper table th,
+body.theme-white-paper table td {
+    border: 1px solid #d0d0d0;
+    padding: 8px 12px;
 }
-body.theme-calm-sky code {
-    background-color: rgba(226, 247, 255, 0.4);
-    font-family: "Source Code Pro", monospace;
-}
-body.theme-calm-sky pre code {
-    background-color: #b0d8ff;
-    color: #2c3e50;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-calm-sky a,
-body.theme-calm-sky h1 a,
-body.theme-calm-sky h2 a,
-body.theme-calm-sky h3 a,
-body.theme-calm-sky h4 a,
-body.theme-calm-sky h5 a,
-body.theme-calm-sky h6 a {
-    color: #0d47a1;
-    text-decoration: none;
+body.theme-white-paper table tr:nth-child(even) {
+    background-color: #eeeeee;
 }
 
-/* Theme: boss-beige (light background) */
-body.theme-boss-beige {
-    font-family: "PT Serif", serif;
-    color: #4a3f35;
-    background-color: #f5e6d3;
-}
-body.theme-boss-beige pre {
-    background-color: #e8d8c5;
-    font-family: "Source Code Pro", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #cbb98f;
-    overflow: auto;
-}
-body.theme-boss-beige code {
-    background-color: rgba(245, 230, 211, 0.4);
-    font-family: "Source Code Pro", monospace;
-}
-body.theme-boss-beige pre code {
-    background-color: #cbb98f;
-    color: #4a3f35;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-boss-beige a,
-body.theme-boss-beige h1 a,
-body.theme-boss-beige h2 a,
-body.theme-boss-beige h3 a,
-body.theme-boss-beige h4 a,
-body.theme-boss-beige h5 a,
-body.theme-boss-beige h6 a {
-    color: #5d4037;
-    text-decoration: none;
-}
-
-/* Theme: ancient-papyrus (light background) */
-body.theme-ancient-papyrus {
-    font-family: "Libre Baskerville", serif;
-    color: #5a4636;
-    background-color: #faf3e0;
-}
-body.theme-ancient-papyrus pre {
-    background-color: #e9dfc5;
-    font-family: "Source Code Pro", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #d5c9a6;
-    overflow: auto;
-}
-body.theme-ancient-papyrus code {
-    background-color: rgba(250, 243, 224, 0.4);
-    font-family: "Source Code Pro", monospace;
-}
-body.theme-ancient-papyrus pre code {
-    background-color: #d5c9a6;
-    color: #5a4636;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-ancient-papyrus a,
-body.theme-ancient-papyrus h1 a,
-body.theme-ancient-papyrus h2 a,
-body.theme-ancient-papyrus h3 a,
-body.theme-ancient-papyrus h4 a,
-body.theme-ancient-papyrus h5 a,
-body.theme-ancient-papyrus h6 a {
-    color: #7b614e;
-    text-decoration: none;
-}
-
-/* Theme: cream-paper (light background) */
-body.theme-cream-paper {
-    font-family: "Lora", serif;
-    color: #333333;
-    background-color: #fff9e6;
-}
-body.theme-cream-paper pre {
-    background-color: #f0e5d8;
-    font-family: "Source Code Pro", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #d9cbb8;
-    overflow: auto;
-}
-body.theme-cream-paper code {
-    background-color: rgba(255, 249, 230, 0.4);
-    font-family: "Source Code Pro", monospace;
-}
-body.theme-cream-paper pre code {
-    background-color: #d9cbb8;
-    color: #333333;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-cream-paper a,
-body.theme-cream-paper h1 a,
-body.theme-cream-paper h2 a,
-body.theme-cream-paper h3 a,
-body.theme-cream-paper h4 a,
-body.theme-cream-paper h5 a,
-body.theme-cream-paper h6 a {
-    color: #5d4037;
-    text-decoration: none;
-}
-
-/* Theme: formal-note (light background) */
-body.theme-formal-note {
-    font-family: "Fira Sans", sans-serif;
-    color: #333333;
-    background-color: #f2f2f2;
-}
-body.theme-formal-note pre {
-    background-color: #e0e0e0;
-    font-family: "Source Code Pro", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #c6c6c6;
-    overflow: auto;
-}
-body.theme-formal-note code {
-    background-color: rgba(242, 242, 242, 0.4);
-    font-family: "Source Code Pro", monospace;
-}
-body.theme-formal-note pre code {
-    background-color: #c6c6c6;
-    color: #333333;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-formal-note a,
-body.theme-formal-note h1 a,
-body.theme-formal-note h2 a,
-body.theme-formal-note h3 a,
-body.theme-formal-note h4 a,
-body.theme-formal-note h5 a,
-body.theme-formal-note h6 a {
-    color: #212121;
-    text-decoration: none;
-}
-
-/* Theme: solar-flare */
-body.theme-solar-flare {
-    font-family: "Poppins", sans-serif;
-    color: #ffeb3b;
-    background-color: #263238;
-}
-body.theme-solar-flare pre {
-    background-color: #1e272e;
-    font-family: "Roboto Mono", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #30363d;
-    overflow: auto;
-}
-body.theme-solar-flare code {
-    background-color: rgba(255,235,59,0.4);
-    font-family: "Roboto Mono", monospace;
-}
-body.theme-solar-flare pre code {
-    background-color: #161c22;
-    color: #fff176;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-solar-flare a,
-body.theme-solar-flare h1 a,
-body.theme-solar-flare h2 a,
-body.theme-solar-flare h3 a,
-body.theme-solar-flare h4 a,
-body.theme-solar-flare h5 a,
-body.theme-solar-flare h6 a {
-    color: #fff176;
-    text-decoration: none;
-}
-
-/* Theme: midnight-blue */
-body.theme-midnight-blue {
-    font-family: "Lato", sans-serif;
-    color: #e0f7fa;
-    background-color: #0d1b2a;
-}
-body.theme-midnight-blue pre {
-    background-color: #001936;
-    font-family: "Roboto Mono", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #30363d;
-    overflow: auto;
-}
-body.theme-midnight-blue code {
-    background-color: rgba(13,27,42,0.4);
-    font-family: "Roboto Mono", monospace;
-}
-body.theme-midnight-blue pre code {
-    background-color: #021328;
-    color: #90caf9;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-midnight-blue a,
-body.theme-midnight-blue h1 a,
-body.theme-midnight-blue h2 a,
-body.theme-midnight-blue h3 a,
-body.theme-midnight-blue h4 a,
-body.theme-midnight-blue h5 a,
-body.theme-midnight-blue h6 a {
-    color: #90caf9;
-    text-decoration: none;
-}
-
-/* Theme: emerald-foam */
-body.theme-emerald-foam {
-    font-family: "Raleway", sans-serif;
-    color: #e8f5e9;
-    background-color: #1b5e20;
-}
-body.theme-emerald-foam pre {
-    background-color: #0d6c1f;
-    font-family: "Courier New", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #30363d;
-    overflow: auto;
-}
-body.theme-emerald-foam code {
-    background-color: rgba(29,87,31,0.4);
-    font-family: "Courier New", monospace;
-}
-body.theme-emerald-foam pre code {
-    background-color: #004c11;
-    color: #81c784;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-emerald-foam a,
-body.theme-emerald-foam h1 a,
-body.theme-emerald-foam h2 a,
-body.theme-emerald-foam h3 a,
-body.theme-emerald-foam h4 a,
-body.theme-emerald-foam h5 a,
-body.theme-emerald-foam h6 a {
-    color: #81c784;
-    text-decoration: none;
-}
-
-/* Theme: lavender-mist */
-body.theme-lavender-mist {
-    font-family: "Cormorant Garamond", serif;
-    color: #f3e5f5;
-    background-color: #4a148c;
-}
-body.theme-lavender-mist pre {
-    background-color: #311b92;
-    font-family: "Courier New", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #30363d;
-    overflow: auto;
-}
-body.theme-lavender-mist code {
-    background-color: rgba(64,20,136,0.4);
-    font-family: "Courier New", monospace;
-}
-body.theme-lavender-mist pre code {
-    background-color: #200c66;
-    color: #ce93d8;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-lavender-mist a,
-body.theme-lavender-mist h1 a,
-body.theme-lavender-mist h2 a,
-body.theme-lavender-mist h3 a,
-body.theme-lavender-mist h4 a,
-body.theme-lavender-mist h5 a,
-body.theme-lavender-mist h6 a {
-    color: #ce93d8;
-    text-decoration: none;
-}
-
-/* Theme: saffron-sand */
-body.theme-saffron-sand {
-    font-family: "Montserrat", sans-serif;
-    color: #ffd54f;
-    background-color: #263238;
-}
-body.theme-saffron-sand pre {
-    background-color: #1e272e;
-    font-family: "Roboto Mono", monospace;
-    padding: 16px;
-    border-radius: 6px;
-    border: 1px solid #30363d;
-    overflow: auto;
-}
-body.theme-saffron-sand code {
-    background-color: rgba(255,235,59,0.4);
-    font-family: "Roboto Mono", monospace;
-}
-body.theme-saffron-sand pre code {
-    background-color: #161c22;
-    color: #ffd54f;
-    font-family: "Source Code Pro", monospace;
-    font-size: 85%;
-    border-radius: 6px;
-}
-body.theme-saffron-sand a,
-body.theme-saffron-sand h1 a,
-body.theme-saffron-sand h2 a,
-body.theme-saffron-sand h3 a,
-body.theme-saffron-sand h4 a,
-body.theme-saffron-sand h5 a,
-body.theme-saffron-sand h6 a {
-    color: #ffd54f;
-    text-decoration: none;
-}
-
-/* Theme: calm-sky (light background) */
+/* ============================================================
+   Theme 7: calm-sky (light background)
+   Alice-blue background, dark slate text
+   ============================================================ */
 body.theme-calm-sky {
     font-family: "Libre Baskerville", serif;
     color: #2c3e50;
@@ -648,8 +342,25 @@ body.theme-calm-sky h6 a {
     color: #1565c0;
     text-decoration: none;
 }
+body.theme-calm-sky table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #b0cfe0;
+}
+body.theme-calm-sky table th,
+body.theme-calm-sky table td {
+    border: 1px solid #b0cfe0;
+    padding: 8px 12px;
+}
+body.theme-calm-sky table tr:nth-child(even) {
+    background-color: #dfe7ee;
+}
 
-/* Theme: boss-beige (light background) */
+/* ============================================================
+   Theme 8: boss-beige (light background)
+   Warm beige background, dark brown text
+   ============================================================ */
 body.theme-boss-beige {
     font-family: "PT Serif", serif;
     color: #4a3c2b;
@@ -684,8 +395,25 @@ body.theme-boss-beige h6 a {
     color: #8c704f;
     text-decoration: none;
 }
+body.theme-boss-beige table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #c9b89a;
+}
+body.theme-boss-beige table th,
+body.theme-boss-beige table td {
+    border: 1px solid #c9b89a;
+    padding: 8px 12px;
+}
+body.theme-boss-beige table tr:nth-child(even) {
+    background-color: #e4d5c2;
+}
 
-/* Theme: ancient-papyrus (light background) */
+/* ============================================================
+   Theme 9: ancient-papyrus (light background)
+   Warm parchment background, dark sepia text
+   ============================================================ */
 body.theme-ancient-papyrus {
     font-family: "Crimson Pro", serif;
     color: #3b2f2f;
@@ -720,8 +448,25 @@ body.theme-ancient-papyrus h6 a {
     color: #7a5e4f;
     text-decoration: none;
 }
+body.theme-ancient-papyrus table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #d5c9a6;
+}
+body.theme-ancient-papyrus table th,
+body.theme-ancient-papyrus table td {
+    border: 1px solid #d5c9a6;
+    padding: 8px 12px;
+}
+body.theme-ancient-papyrus table tr:nth-child(even) {
+    background-color: #ece4d5;
+}
 
-/* Theme: cream-paper (light background) */
+/* ============================================================
+   Theme 10: cream-paper (light background)
+   Warm cream background, dark charcoal text
+   ============================================================ */
 body.theme-cream-paper {
     font-family: "Fira Sans", sans-serif;
     color: #333333;
@@ -756,8 +501,25 @@ body.theme-cream-paper h6 a {
     color: #7a6e5c;
     text-decoration: none;
 }
+body.theme-cream-paper table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #d9cbb8;
+}
+body.theme-cream-paper table th,
+body.theme-cream-paper table td {
+    border: 1px solid #d9cbb8;
+    padding: 8px 12px;
+}
+body.theme-cream-paper table tr:nth-child(even) {
+    background-color: #eee8d5;
+}
 
-/* Theme: formal-note (light background) */
+/* ============================================================
+   Theme 11: formal-note (light background)
+   Warm off-white background, near-black text
+   ============================================================ */
 body.theme-formal-note {
     font-family: "Ubuntu", sans-serif;
     color: #222222;
@@ -791,4 +553,283 @@ body.theme-formal-note h5 a,
 body.theme-formal-note h6 a {
     color: #555555;
     text-decoration: none;
+}
+body.theme-formal-note table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #cfc5a5;
+}
+body.theme-formal-note table th,
+body.theme-formal-note table td {
+    border: 1px solid #cfc5a5;
+    padding: 8px 12px;
+}
+body.theme-formal-note table tr:nth-child(even) {
+    background-color: #e7e3d2;
+}
+
+/* ============================================================
+   Theme 12: solar-flare
+   Dark blue-grey background, vivid yellow text
+   ============================================================ */
+body.theme-solar-flare {
+    font-family: "Poppins", sans-serif;
+    color: #ffeb3b;
+    background-color: #263238;
+}
+body.theme-solar-flare pre {
+    background-color: #1e272e;
+    font-family: "Roboto Mono", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    overflow: auto;
+}
+body.theme-solar-flare code {
+    background-color: rgba(255,235,59,0.4);
+    font-family: "Roboto Mono", monospace;
+}
+body.theme-solar-flare pre code {
+    background-color: #161c22;
+    color: #fff176;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-solar-flare a,
+body.theme-solar-flare h1 a,
+body.theme-solar-flare h2 a,
+body.theme-solar-flare h3 a,
+body.theme-solar-flare h4 a,
+body.theme-solar-flare h5 a,
+body.theme-solar-flare h6 a {
+    color: #fff176;
+    text-decoration: none;
+}
+body.theme-solar-flare table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #455a64;
+}
+body.theme-solar-flare table th,
+body.theme-solar-flare table td {
+    border: 1px solid #455a64;
+    padding: 8px 12px;
+}
+body.theme-solar-flare table tr:nth-child(even) {
+    background-color: #1e272e;
+}
+
+/* ============================================================
+   Theme 13: midnight-blue
+   Very dark navy background, pale cyan text
+   ============================================================ */
+body.theme-midnight-blue {
+    font-family: "Lato", sans-serif;
+    color: #e0f7fa;
+    background-color: #0d1b2a;
+}
+body.theme-midnight-blue pre {
+    background-color: #001936;
+    font-family: "Roboto Mono", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    overflow: auto;
+}
+body.theme-midnight-blue code {
+    background-color: rgba(13,27,42,0.4);
+    font-family: "Roboto Mono", monospace;
+}
+body.theme-midnight-blue pre code {
+    background-color: #021328;
+    color: #90caf9;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-midnight-blue a,
+body.theme-midnight-blue h1 a,
+body.theme-midnight-blue h2 a,
+body.theme-midnight-blue h3 a,
+body.theme-midnight-blue h4 a,
+body.theme-midnight-blue h5 a,
+body.theme-midnight-blue h6 a {
+    color: #90caf9;
+    text-decoration: none;
+}
+body.theme-midnight-blue table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #1a3a5c;
+}
+body.theme-midnight-blue table th,
+body.theme-midnight-blue table td {
+    border: 1px solid #1a3a5c;
+    padding: 8px 12px;
+}
+body.theme-midnight-blue table tr:nth-child(even) {
+    background-color: #0a1628;
+}
+
+/* ============================================================
+   Theme 14: emerald-foam
+   Dark forest-green background, pale green text
+   ============================================================ */
+body.theme-emerald-foam {
+    font-family: "Raleway", sans-serif;
+    color: #e8f5e9;
+    background-color: #1b5e20;
+}
+body.theme-emerald-foam pre {
+    background-color: #0d6c1f;
+    font-family: "Courier New", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    overflow: auto;
+}
+body.theme-emerald-foam code {
+    background-color: rgba(29,87,31,0.4);
+    font-family: "Courier New", monospace;
+}
+body.theme-emerald-foam pre code {
+    background-color: #004c11;
+    color: #81c784;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-emerald-foam a,
+body.theme-emerald-foam h1 a,
+body.theme-emerald-foam h2 a,
+body.theme-emerald-foam h3 a,
+body.theme-emerald-foam h4 a,
+body.theme-emerald-foam h5 a,
+body.theme-emerald-foam h6 a {
+    color: #81c784;
+    text-decoration: none;
+}
+body.theme-emerald-foam table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #2e7d32;
+}
+body.theme-emerald-foam table th,
+body.theme-emerald-foam table td {
+    border: 1px solid #2e7d32;
+    padding: 8px 12px;
+}
+body.theme-emerald-foam table tr:nth-child(even) {
+    background-color: #14451a;
+}
+
+/* ============================================================
+   Theme 15: lavender-mist
+   Deep purple background, pale lavender text
+   ============================================================ */
+body.theme-lavender-mist {
+    font-family: "Cormorant Garamond", serif;
+    color: #f3e5f5;
+    background-color: #4a148c;
+}
+body.theme-lavender-mist pre {
+    background-color: #311b92;
+    font-family: "Courier New", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    overflow: auto;
+}
+body.theme-lavender-mist code {
+    background-color: rgba(64,20,136,0.4);
+    font-family: "Courier New", monospace;
+}
+body.theme-lavender-mist pre code {
+    background-color: #200c66;
+    color: #ce93d8;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-lavender-mist a,
+body.theme-lavender-mist h1 a,
+body.theme-lavender-mist h2 a,
+body.theme-lavender-mist h3 a,
+body.theme-lavender-mist h4 a,
+body.theme-lavender-mist h5 a,
+body.theme-lavender-mist h6 a {
+    color: #ce93d8;
+    text-decoration: none;
+}
+body.theme-lavender-mist table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #6a1b9a;
+}
+body.theme-lavender-mist table th,
+body.theme-lavender-mist table td {
+    border: 1px solid #6a1b9a;
+    padding: 8px 12px;
+}
+body.theme-lavender-mist table tr:nth-child(even) {
+    background-color: #380d6e;
+}
+
+/* ============================================================
+   Theme 16: saffron-sand
+   Dark blue-grey background, warm golden text
+   ============================================================ */
+body.theme-saffron-sand {
+    font-family: "Montserrat", sans-serif;
+    color: #ffd54f;
+    background-color: #263238;
+}
+body.theme-saffron-sand pre {
+    background-color: #1e272e;
+    font-family: "Roboto Mono", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #30363d;
+    overflow: auto;
+}
+body.theme-saffron-sand code {
+    background-color: rgba(255,235,59,0.4);
+    font-family: "Roboto Mono", monospace;
+}
+body.theme-saffron-sand pre code {
+    background-color: #161c22;
+    color: #ffd54f;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 6px;
+}
+body.theme-saffron-sand a,
+body.theme-saffron-sand h1 a,
+body.theme-saffron-sand h2 a,
+body.theme-saffron-sand h3 a,
+body.theme-saffron-sand h4 a,
+body.theme-saffron-sand h5 a,
+body.theme-saffron-sand h6 a {
+    color: #ffd54f;
+    text-decoration: none;
+}
+body.theme-saffron-sand table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
+    border: 1px solid #455a64;
+}
+body.theme-saffron-sand table th,
+body.theme-saffron-sand table td {
+    border: 1px solid #455a64;
+    padding: 8px 12px;
+}
+body.theme-saffron-sand table tr:nth-child(even) {
+    background-color: #1e272e;
 }

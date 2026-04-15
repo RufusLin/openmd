@@ -23,7 +23,7 @@
 # -------------------------------------------------
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 
-__version__ = '1.4.29'
+__version__ = '1.4.30'
 
 import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess, threading, time, json, html, textwrap
 import urllib.request
@@ -72,18 +72,17 @@ pre {
 code { background-color: rgba(110,118,129,0.4); padding: 0.2em 0.4em; border-radius: 6px; font-size: 85%; }
 table { border-collapse: collapse; width: 100%; margin: 24px 0; border: 1px solid #30363d; }
 table th, table td { border: 1px solid #30363d; padding: 8px 12px; }
-table tr:nth-child(even) { background-color: #161b22; }
 h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { color: inherit; text-decoration: none; }
 """
 
 # Sidebar Qt stylesheet
 SIDEBAR_CSS = """
 QWidget#sidebarCol {
-    background: #161b22;
+    background: #264b32;
     border-right: 1px solid #30363d;
 }
 QTreeWidget {
-    background: #161b22;
+    background: #264b32;
     color: #c9d1d9;
     border: 2px solid transparent;
     font-size: 14px;
@@ -101,7 +100,7 @@ QTreeWidget::item:selected {
     border-radius: 2px;
 }
 QTreeWidget::item:selected:!active {
-    background: #30363d;
+    background: #50664d;
     color: #8b949e;
     border-left: 3px solid #484f58;
 }
@@ -502,7 +501,9 @@ class FilePreviewWidget(QWidget):
         self._current_theme = theme_name
         _set_saved_theme(self.cfg, theme_name)
         self.view.page().runJavaScript(
-            "try { if(document.body) document.body.className = 'theme-" + theme_name + "'; } catch(e) {}"
+            "try { if(document.body) document.body.className = 'theme-" + theme_name + "';"
+            " if(typeof _openmd_shade_even_rows==='function') _openmd_shade_even_rows();"
+            " } catch(e) {}"
         )
 
     def _populate_sidebar(self, toc_html: str):
@@ -742,6 +743,21 @@ class FilePreviewWidget(QWidget):
             document.body.style.boxShadow = 'none';
             document.body.style.opacity = '0.6';
         });
+        // Alternating table row shading: body background minus 0x11 per channel
+        function _openmd_shade_even_rows() {
+            var bg = getComputedStyle(document.body).backgroundColor;
+            var m = bg.match(/\\d+/g);
+            if (m && m.length >= 3) {
+                var r = Math.max(0, parseInt(m[0]) - 17);
+                var g = Math.max(0, parseInt(m[1]) - 17);
+                var b = Math.max(0, parseInt(m[2]) - 17);
+                var color = 'rgb(' + r + ',' + g + ',' + b + ')';
+                var rows = document.querySelectorAll('tbody tr:nth-child(even)');
+                for (var i = 0; i < rows.length; i++) {
+                    rows[i].style.backgroundColor = color;
+                }
+            }
+        }
         </script>
         """
         body_content += focus_script
@@ -753,13 +769,16 @@ class FilePreviewWidget(QWidget):
         )
 
     def _on_load_finished(self, ok: bool):
-        """Trigger Mermaid rendering after page load."""
+        """Trigger Mermaid rendering and table row shading after page load."""
         if ok:
             self.view.page().runJavaScript(
                 "try { if(window.mermaid){"
                 "  mermaid.initialize({startOnLoad:false,theme:'dark'});"
                 "  mermaid.run();"
                 "} } catch(e) {}"
+            )
+            self.view.page().runJavaScript(
+                "try { if(typeof _openmd_shade_even_rows==='function') _openmd_shade_even_rows(); } catch(e) {}"
             )
 
     def _reload(self, _path: str = ""):
