@@ -4,12 +4,12 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmd"
-version = "1.4.21"
+version = "1.4.23"
 description = "Fast popup Markdown viewer with sidebar TOC, multi-file tabs, css themes, mermaid, katex, obsidian yaml show/hide, keyboard-based"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "RufusLin" }]
-requires-python = ">=3.8"
+requires-python = ">=3.12"
 dependencies = [
     "PySide6",
     "Markdown",
