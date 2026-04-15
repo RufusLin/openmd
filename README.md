@@ -18,8 +18,8 @@ X: @rufuslinjapan
 
 ## What it looks like
 
-![openmd with multiple tabs and TOC sidebar](pix/1.png)
-![Mermaid diagram and KaTeX math rendered](pix/2.png)
+![openmd with multiple tabs and TOC sidebar](https://raw.githubusercontent.com/RufusLin/openmd/main/pix/1.png)
+![Mermaid diagram and KaTeX math rendered](https://raw.githubusercontent.com/RufusLin/openmd/main/pix/2.png)
 
 *(Click any image to enlarge)*
 
@@ -27,7 +27,7 @@ X: @rufuslinjapan
 
 ## Usage
 
-```bash
+```
 # Open a single file
 openmd README.md
 
@@ -45,7 +45,7 @@ openmd docs/*.md
 
 Add to your `~/.zshrc` or `~/.bashrc`:
 
-```zsh
+```
 openmd() { "$HOME/lab/openmd/openmd" "$@" 2>&1 }
 ```
 
@@ -53,7 +53,7 @@ Or if installed via pip, the `openmd` command is already in your `PATH`.
 
 ### Remote preview via SSH (optional)
 
-```zsh
+```
 remotemd() {
     local remote_path="$1"
     local filename=$(basename "$remote_path")
@@ -72,7 +72,7 @@ remotemd() {
 - **GitHub-dark theme by default** — comfortable reading in low-light environments
 - **16 built-in themes** — dark and light, switch instantly via the swatch bar at the bottom of the sidebar; fully customizable via `.openmd.css`
 - **Live reload** — the preview updates instantly when the file is saved; no manual refresh needed
-- **Mermaid diagrams** — fenced ` ```mermaid ` blocks render automatically via CDN
+- **Mermaid diagrams** — fenced mermaid blocks render automatically via CDN
 - **KaTeX math** — inline `$…$` and display `$$…$$` expressions render out of the box
 - **Sidebar TOC** — hierarchical (H1 → H2 → H3); click or press Return to jump to any heading. The sidebar takes up 20% of your screen, and you can easily jump between the sidebar and display using the left/right arrow keys.
 - **Dynamic Pane Focus** — unselected panes automatically dim to 60% opacity so you always know exactly where your keyboard focus is.
@@ -105,7 +105,7 @@ To switch themes programmatically, add `body.theme-yourname { ... }` blocks to y
 ## Requirements
 
 - macOS or Linux (POSIX)
-- Python 3.8+
+- **Python 3.10+**
 - [PySide6](https://pypi.org/project/PySide6/) + PySide6-WebEngine
 - [Markdown](https://pypi.org/project/Markdown/)
 - [BeautifulSoup4](https://pypi.org/project/beautifulsoup4/)
@@ -119,7 +119,7 @@ To switch themes programmatically, add `body.theme-yourname { ... }` blocks to y
 
 ### pip (recommended)
 
-```bash
+```
 pip install openmd
 ```
 
@@ -129,14 +129,23 @@ After installing, the `openmd` command is available in your shell.
 
 The default `python3` on macOS is still Python 3.9, which is **not supported**.
 
-**Easiest way (recommended – auto-handles everything):**
-```bash
+**Easiest & recommended (auto-handles Python):**
+
+```
 brew install uv
 uv tool install openmd
+```
+
+**Alternative with plain Homebrew:**
+
+```
+brew install python          # installs the latest Python 3
+python3 -m pip install openmd
+```
 
 ### From source
 
-```bash
+```
 git clone https://github.com/RufusLin/openmd.git
 cd openmd
 pip install -e .
