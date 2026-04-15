@@ -34,6 +34,7 @@ except ImportError:
 
 os.environ.setdefault("QTWEBENGINE_DISABLE_SANDBOX", "1")
 os.environ.setdefault("QT_QUICK_BACKEND", "software")
+os.environ.setdefault("QT_LOGGING_RULES", "qt.webengine*=false;*.info=false;*.warning=false;*.debug=false")
 
 # Try to import curses for file picker; fallback to simple list
 try:
