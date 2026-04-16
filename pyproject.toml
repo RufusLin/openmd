@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmd"
-version = "1.4.30"
-description = "Fast popup Markdown viewer with sidebar TOC, multi-file tabs, css themes, mermaid, katex, obsidian yaml show/hide, keyboard-based"
+version = "1.5.0"
+description = "Fast popup Markdown viewer with sidebar TOC, multi-file tabs, css themes, mermaid, katex, obsidian yaml show/hide, keyboard-based, stdio pipes"
 readme = "README.md"
 license = { text = "MIT" }
 authors = [{ name = "RufusLin" }]

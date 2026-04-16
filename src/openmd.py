@@ -23,7 +23,8 @@
 # -------------------------------------------------
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 
-__version__ = '1.4.30'
+__version__ = '1.5.0'
+# "The Pipeline"
 
 import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess, threading, time, json, html, textwrap
 import urllib.request
@@ -357,8 +358,11 @@ class FilePreviewWidget(QWidget):
         # Mermaid: triggered via loadFinished + runJavaScript
         self._mermaid_script = '<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>'
 
-        # --- Load and render markdown ---
-        html_body, toc_html = self._render_markdown(file_path)
+        # --- Load and render markdown (from file or stdin) ---
+        if _has_stdin_data():
+            html_body, toc_html = self._render_markdown_stdin()
+        else:
+            html_body, toc_html = self._render_markdown(file_path)
         full_html = self._build_html(html_body)
 
         # --- Sidebar (QTreeWidget) ---
@@ -519,6 +523,10 @@ class FilePreviewWidget(QWidget):
             for li in top_ul.find_all("li", recursive=False):
                 self._add_toc_item(li, parent_item=None)
         self.sidebar.expandAll()
+        # Select the first item so the highlight is visible on open.
+        first = self.sidebar.topLevelItem(0)
+        if first:
+            self.sidebar.setCurrentItem(first)
 
     def _add_toc_item(self, node, parent_item):
         """Recursively add a <li> node (and its nested <ul> children) to the sidebar."""
@@ -542,20 +550,20 @@ class FilePreviewWidget(QWidget):
             for sub_li in child_ul.find_all("li", recursive=False):
                 self._add_toc_item(sub_li, item)
 
-    def _render_markdown(self, file_path: str):
-        """Read and render a markdown file; return (html_body, toc_html)."""
-        try:
-            with open(file_path, 'r', encoding='utf-8') as fh:
-                raw = fh.read()
-            # Extract front-matter (YAML block between --- markers)
-            yaml_str, body_md = self._extract_front_matter(raw)
-            
-            # STABILITY FIX: Use dedent to handle selected text fragments that carry
-            # uniform indentation (common when selecting from terminal or indented blocks).
-            # This prevents them from being parsed as verbatim code blocks.
-            body_md = textwrap.dedent(body_md).strip()
+    def _render_markdown_core(self, md_text: str):
+        """Shared rendering logic: convert a markdown string to (html_body, toc_html).
 
-            # Generate hidden meta HTML from YAML if yaml is available
+        This is the single place where markdown rendering happens.  Both
+        _render_markdown (file input) and _render_markdown_stdin (pipe input)
+        are thin wrappers that supply the raw text and delegate here.
+        """
+        try:
+            # Extract front-matter (YAML block between --- markers)
+            yaml_str, body_md = self._extract_front_matter(md_text)
+            # Dedent to handle selected text fragments that carry uniform
+            # indentation (common when piping from terminal or indented blocks).
+            body_md = textwrap.dedent(body_md).strip()
+            # Build hidden meta HTML from YAML front-matter if available
             self._meta_html = ""
             if yaml and yaml_str:
                 try:
@@ -585,17 +593,35 @@ class FilePreviewWidget(QWidget):
                     pre_tag.replace_with(new_pre)
             html_body = str(soup)
         except Exception as e:
-            html_body = f"<pre>Error loading file: {e}</pre>"
+            html_body = f"<pre>Error rendering markdown: {e}</pre>"
             toc_html = ""
             self._meta_html = ""
         return html_body, toc_html
+
+    def _render_markdown(self, file_path: str):
+        """Read a markdown file from disk and render it; return (html_body, toc_html)."""
+        try:
+            with open(file_path, 'r', encoding='utf-8') as fh:
+                md_text = fh.read()
+        except Exception as e:
+            self._meta_html = ""
+            return f"<pre>Error loading file: {e}</pre>", ""
+        return self._render_markdown_core(md_text)
+
+    def _render_markdown_stdin(self):
+        """Read markdown from stdin (pipe mode) and render it; return (html_body, toc_html)."""
+        try:
+            md_text = sys.stdin.read()
+        except Exception as e:
+            self._meta_html = ""
+            return f"<pre>Error reading stdin: {e}</pre>", ""
+        return self._render_markdown_core(md_text)
 
     def _extract_front_matter(self, raw: str) -> tuple[str, str]:
         """Return (yaml_str, body_md). If no front-matter, returns ('', raw)."""
         lines = raw.splitlines()
         if len(lines) >= 2 and lines[0].strip() == '---' and lines[1].strip() != '---':
             try:
-                # We join lines starting from the first line AFTER the opening ---
                 yaml_block = "\n".join(lines[1:])
                 parts = yaml_block.split('---', 1)
                 if len(parts) == 2 and parts[1].strip():
@@ -925,6 +951,25 @@ class FilePreviewWidget(QWidget):
 """)
         dlg.layout.addWidget(bg_view)
         dlg.exec()
+
+
+
+def _has_stdin_data() -> bool:
+    """Return True only when stdin is a real pipe with no file arguments.
+
+    Returns False when:
+    - Running as the re-exec child (_OPENMD_CHILD=1): parent already wrote
+      stdin to a temp file and passed it as a command-line argument.
+    - File arguments are present (sys.argv[1:]): covers the macOS Services
+      path where Automator writes selected text to a temp file and launches
+      openmd with that path — no TTY, but we must read from the file.
+    """
+    if os.environ.get('_OPENMD_CHILD') == '1':
+        return False
+    if len(sys.argv) > 1:
+        return False
+    return not sys.stdin.isatty()
+
 
 
 # ---------------------------------------------------------------------------
@@ -1442,7 +1487,20 @@ def main():
     _ensure_macos_service()
 
     # Determine files to open
-    if len(sys.argv) < 2:
+    _stdin_temp = None
+    if _has_stdin_data():
+        # stdin is piped — read it NOW before the re-exec closes the pipe,
+        # write to a temp file, and pass that path to the child process.
+        import tempfile as _tempfile
+        _stdin_text = sys.stdin.read()
+        _tf = _tempfile.NamedTemporaryFile(
+            suffix='.md', delete=False, mode='w', encoding='utf-8'
+        )
+        _tf.write(_stdin_text)
+        _tf.close()
+        _stdin_temp = _tf.name
+        md_files = [_stdin_temp]
+    elif len(sys.argv) < 2:
         file_path = pick_file_curses()
         md_files = [file_path]
     else:
@@ -1458,6 +1516,8 @@ def main():
     if sys.platform != 'win32' and os.environ.get('_OPENMD_CHILD') != '1':
         env = os.environ.copy()
         env['_OPENMD_CHILD'] = '1'
+        if _stdin_temp:
+            env['_OPENMD_STDIN_TEMP'] = _stdin_temp
         # Pass the (potentially picked) file as an argument to the child
         subprocess.Popen(
             [sys.executable] + [sys.argv[0]] + md_files,
@@ -1472,9 +1532,25 @@ def main():
         app = QApplication(sys.argv)
         cfg = _load_config()
         tab_widget = QTabWidget()
+
+        # Build tabs.  In stdin mode the parent wrote stdin to a temp file
+        # before re-execing; _OPENMD_STDIN_TEMP tells us which path it used
+        # so we can label that tab 'stdin' and clean up after rendering.
+        _stdin_temp_child = os.environ.get('_OPENMD_STDIN_TEMP')
         for f in md_files:
             widget = FilePreviewWidget(f, cfg)
-            tab_widget.addTab(widget, os.path.basename(f))
+            label = 'stdin' if f == _stdin_temp_child else os.path.basename(f)
+            tab_widget.addTab(widget, label)
+        if _stdin_temp_child and os.path.exists(_stdin_temp_child):
+            def _cleanup_stdin_temp(_p=_stdin_temp_child):
+                try:
+                    os.unlink(_p)
+                except Exception:
+                    pass
+            # Clean up when the app exits, not on a timer — deleting the
+            # temp file early triggers the QFileSystemWatcher and causes
+            # an "Error loading file" message in the display pane.
+            app.aboutToQuit.connect(_cleanup_stdin_temp)
         window = MDPreviewWindow(tab_widget, cfg)
         window.show()
         sys.exit(app.exec())
