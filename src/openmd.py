@@ -23,7 +23,7 @@
 # -------------------------------------------------
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 
-__version__ = '1.5.0'
+__version__ = '1.5.1'
 # "The Pipeline"
 
 import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess, threading, time, json, html, textwrap

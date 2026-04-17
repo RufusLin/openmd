@@ -12,60 +12,100 @@
  * fall back to this file automatically.
 */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Montserrat:wght@400;600;700&family=Lato:wght@400;700&family=Playfair+Display:wght@400;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500&family=Source+Code+Pro:wght@400;600&family=Open+Sans:wght@400;600&family=Merriweather:wght@400;700&family=Cormorant+Garamond:wght@400;600&family=Raleway:wght@400;600&family=Space+Mono:wght@400;700&family=Libre+Baskerville:wght@400;700&family=PT+Serif:wght@400;700&family=Crimson+Pro:wght@400;600&family=Fira+Sans:wght@400;500&family=Ubuntu:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=Orbitron:wght@500;700&family=Share+Tech+Mono&family=EB+Garamond:wght@400;600&family=Source+Serif+4:wght@400;600&family=Spectral:wght@400;600&family=Lora:wght@400;600&family=Libre+Baskerville:wght@400;700&family=Crimson+Pro:wght@400;600&family=Roboto+Mono:wght@400;500&family=Source+Code+Pro:wght@400;600&display=swap');
 
 /* ============================================================
-   Theme 1: stygian-darkness (default)
-   Dark charcoal background, warm off-white text
+   Theme: stygian-darkness
    ============================================================ */
 body {
-    font-family: "Inter", system-ui, sans-serif;
+    font-family: "IBM Plex Sans", sans-serif;
     line-height: 1.6;
-    color: #f0e8e8;
+    color: #d8d4cc;
     max-width: 900px;
     margin: auto;
     padding: 2rem;
-    background-color: #0d1117;
+    background-color: #111318;
+}
+body h1,
+body h2 {
+    font-family: "Orbitron", sans-serif;
+    font-weight: 500;
+    color: #e8e4dc;
+}
+body pre {
+    background-color: #1a1d24;
+    font-family: "Roboto Mono", monospace;
+    padding: 16px;
+    border-radius: 6px;
+    border: 1px solid #2d3139;
+    overflow: auto;
+}
+body code {
+    background-color: rgba(255,255,255,0.05);
+    font-family: "Roboto Mono", monospace;
+}
+body pre code {
+    background-color: transparent;
+    color: #b8c0d0;
+    font-family: "Source Code Pro", monospace;
+    font-size: 85%;
+    border-radius: 0;
+}
+body a,
+body h1 a,
+body h2 a,
+body h3 a,
+body h4 a,
+body h5 a,
+body h6 a {
+    color: #8ab4f8;
+    text-decoration: none;
 }
 body table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #30363d;
+    border: 1px solid #2d3139;
 }
 body table th,
 body table td {
-    border: 1px solid #30363d;
+    border: 1px solid #2d3139;
     padding: 8px 12px;
 }
-
+body table tr:nth-child(even) {
+    background-color: #161920;
+}
 /* ============================================================
-   Theme 2: outer-space
-   Deep navy background, cyan-tinted text
+   Theme: outer-space
    ============================================================ */
 body.theme-outer-space {
-    font-family: "Montserrat", sans-serif;
-    color: #e0f7fa;
-    background-color: #001f3f;
+    font-family: "IBM Plex Sans", sans-serif;
+    color: #c8cdd8;
+    background-color: #0e1520;
+}
+body.theme-outer-space h1,
+body.theme-outer-space h2 {
+    font-family: "Share Tech Mono", monospace;
+    color: #e0e5f0;
 }
 body.theme-outer-space pre {
-    background-color: #002b5c;
-    font-family: "Space Mono", monospace;
+    background-color: #151e2d;
+    font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #30363d;
+    border: 1px solid #2a364a;
     overflow: auto;
 }
 body.theme-outer-space code {
-    background-color: rgba(0,31,63,0.4);
+    background-color: rgba(136,192,208,0.1);
     font-family: "Roboto Mono", monospace;
 }
 body.theme-outer-space pre code {
-    background-color: #001e4d;
-    color: #c8e6ff;
+    background-color: transparent;
+    color: #88c0d0;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-outer-space a,
 body.theme-outer-space h1 a,
@@ -74,51 +114,55 @@ body.theme-outer-space h3 a,
 body.theme-outer-space h4 a,
 body.theme-outer-space h5 a,
 body.theme-outer-space h6 a {
-    color: #b2ebf2;
+    color: #81a1c1;
     text-decoration: none;
 }
 body.theme-outer-space table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #30363d;
+    border: 1px solid #2a364a;
 }
 body.theme-outer-space table th,
 body.theme-outer-space table td {
-    border: 1px solid #30363d;
+    border: 1px solid #2a364a;
     padding: 8px 12px;
 }
 body.theme-outer-space table tr:nth-child(even) {
-    background-color: #002b5c;
+    background-color: #121a26;
 }
-
 /* ============================================================
-   Theme 3: deep-ocean
-   Dark blue background, teal-tinted text
+   Theme: deep-ocean
    ============================================================ */
 body.theme-deep-ocean {
-    font-family: "Roboto", sans-serif;
-    color: #e0f2f1;
-    background-color: #003366;
+    font-family: "IBM Plex Sans", sans-serif;
+    color: #c5d5e0;
+    background-color: #0a1628;
+}
+body.theme-deep-ocean h1,
+body.theme-deep-ocean h2 {
+    font-family: "Orbitron", sans-serif;
+    font-weight: 500;
+    color: #e0ebf5;
 }
 body.theme-deep-ocean pre {
-    background-color: #001122;
+    background-color: #101f36;
     font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #30363d;
+    border: 1px solid #243b5c;
     overflow: auto;
 }
 body.theme-deep-ocean code {
-    background-color: rgba(0,51,102,0.4);
+    background-color: rgba(94,129,172,0.15);
     font-family: "Roboto Mono", monospace;
 }
 body.theme-deep-ocean pre code {
-    background-color: #001533;
-    color: #a0c4d9;
+    background-color: transparent;
+    color: #8fbcbb;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-deep-ocean a,
 body.theme-deep-ocean h1 a,
@@ -127,51 +171,54 @@ body.theme-deep-ocean h3 a,
 body.theme-deep-ocean h4 a,
 body.theme-deep-ocean h5 a,
 body.theme-deep-ocean h6 a {
-    color: #80deea;
+    color: #5e81ac;
     text-decoration: none;
 }
 body.theme-deep-ocean table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #30363d;
+    border: 1px solid #243b5c;
 }
 body.theme-deep-ocean table th,
 body.theme-deep-ocean table td {
-    border: 1px solid #30363d;
+    border: 1px solid #243b5c;
     padding: 8px 12px;
 }
 body.theme-deep-ocean table tr:nth-child(even) {
-    background-color: #001f40;
+    background-color: #0d1a2e;
 }
-
 /* ============================================================
-   Theme 4: burning-desert
-   Deep crimson background, warm pink-white text
+   Theme: burning-desert
    ============================================================ */
 body.theme-burning-desert {
-    font-family: "Merriweather", serif;
-    color: #ffebee;
-    background-color: #b71c1c;
+    font-family: "IBM Plex Sans", sans-serif;
+    color: #e8d5c4;
+    background-color: #1a0f0a;
+}
+body.theme-burning-desert h1,
+body.theme-burning-desert h2 {
+    font-family: "Share Tech Mono", monospace;
+    color: #f5e6d8;
 }
 body.theme-burning-desert pre {
-    background-color: #880e4f;
-    font-family: "Source Code Pro", monospace;
+    background-color: #261710;
+    font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #30363d;
+    border: 1px solid #4a2d20;
     overflow: auto;
 }
 body.theme-burning-desert code {
-    background-color: rgba(183,28,28,0.4);
-    font-family: "Source Code Pro", monospace;
+    background-color: rgba(208,135,112,0.15);
+    font-family: "Roboto Mono", monospace;
 }
 body.theme-burning-desert pre code {
-    background-color: #6d001e;
-    color: #ff8a80;
+    background-color: transparent;
+    color: #d08770;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-burning-desert a,
 body.theme-burning-desert h1 a,
@@ -180,51 +227,49 @@ body.theme-burning-desert h3 a,
 body.theme-burning-desert h4 a,
 body.theme-burning-desert h5 a,
 body.theme-burning-desert h6 a {
-    color: #ff8a80;
+    color: #bf616a;
     text-decoration: none;
 }
 body.theme-burning-desert table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #7f1010;
+    border: 1px solid #4a2d20;
 }
 body.theme-burning-desert table th,
 body.theme-burning-desert table td {
-    border: 1px solid #7f1010;
+    border: 1px solid #4a2d20;
     padding: 8px 12px;
 }
 body.theme-burning-desert table tr:nth-child(even) {
-    background-color: #8b0000;
+    background-color: #20130d;
 }
-
 /* ============================================================
-   Theme 5: light-pineapple (light background)
-   Off-white background, dark charcoal text
+   Theme: light-pineapple
    ============================================================ */
 body.theme-light-pineapple {
-    font-family: "Open Sans", sans-serif;
-    color: #222222;
-    background-color: #f5f5f5;
+    font-family: "Lora", serif;
+    color: #2a2520;
+    background-color: #f4f1ec;
 }
 body.theme-light-pineapple pre {
-    background-color: #e0e0e0;
-    font-family: "Courier New", monospace;
+    background-color: #ebe6df;
+    font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #dcd5cc;
     overflow: auto;
 }
 body.theme-light-pineapple code {
-    background-color: rgba(0,0,0,0.05);
-    font-family: "Courier New", monospace;
+    background-color: rgba(42,37,32,0.06);
+    font-family: "Roboto Mono", monospace;
 }
 body.theme-light-pineapple pre code {
-    background-color: #d0d0d0;
-    color: #333333;
+    background-color: transparent;
+    color: #4a423a;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-light-pineapple a,
 body.theme-light-pineapple h1 a,
@@ -233,51 +278,49 @@ body.theme-light-pineapple h3 a,
 body.theme-light-pineapple h4 a,
 body.theme-light-pineapple h5 a,
 body.theme-light-pineapple h6 a {
-    color: #333333;
+    color: #6a5a4a;
     text-decoration: none;
 }
 body.theme-light-pineapple table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #c8c8c8;
+    border: 1px solid #dcd5cc;
 }
 body.theme-light-pineapple table th,
 body.theme-light-pineapple table td {
-    border: 1px solid #c8c8c8;
+    border: 1px solid #dcd5cc;
     padding: 8px 12px;
 }
 body.theme-light-pineapple table tr:nth-child(even) {
-    background-color: #e4e4e4;
+    background-color: #f0ebe4;
 }
-
 /* ============================================================
-   Theme 6: white-paper (light background)
-   Pure white background, near-black text
+   Theme: white-paper
    ============================================================ */
 body.theme-white-paper {
-    font-family: "Merriweather", serif;
-    color: #222222;
-    background-color: #ffffff;
+    font-family: "Source Serif 4", serif;
+    color: #1e1e1e;
+    background-color: #fafaf8;
 }
 body.theme-white-paper pre {
-    background-color: #f8f8f8;
-    font-family: "Courier New", monospace;
+    background-color: #f0f0ed;
+    font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid #e0e0db;
     overflow: auto;
 }
 body.theme-white-paper code {
-    background-color: rgba(0,0,0,0.05);
-    font-family: "Courier New", monospace;
+    background-color: rgba(30,30,30,0.05);
+    font-family: "Roboto Mono", monospace;
 }
 body.theme-white-paper pre code {
-    background-color: #eaeaea;
-    color: #222222;
+    background-color: transparent;
+    color: #3a3a3a;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-white-paper a,
 body.theme-white-paper h1 a,
@@ -286,51 +329,49 @@ body.theme-white-paper h3 a,
 body.theme-white-paper h4 a,
 body.theme-white-paper h5 a,
 body.theme-white-paper h6 a {
-    color: #333333;
+    color: #4a5a6a;
     text-decoration: none;
 }
 body.theme-white-paper table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #d0d0d0;
+    border: 1px solid #e0e0db;
 }
 body.theme-white-paper table th,
 body.theme-white-paper table td {
-    border: 1px solid #d0d0d0;
+    border: 1px solid #e0e0db;
     padding: 8px 12px;
 }
 body.theme-white-paper table tr:nth-child(even) {
-    background-color: #eeeeee;
+    background-color: #f4f4f1;
 }
-
 /* ============================================================
-   Theme 7: calm-sky (light background)
-   Alice-blue background, dark slate text
+   Theme: calm-sky
    ============================================================ */
 body.theme-calm-sky {
     font-family: "Libre Baskerville", serif;
-    color: #2c3e50;
-    background-color: #f0f8ff;
+    color: #253040;
+    background-color: #f0f4f8;
 }
 body.theme-calm-sky pre {
-    background-color: #e6f2ff;
+    background-color: #e4eaf0;
     font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #c0d8e0;
+    border: 1px solid #d0d8e2;
     overflow: auto;
 }
 body.theme-calm-sky code {
-    background-color: rgba(44,62,80,0.1);
+    background-color: rgba(37,48,64,0.06);
     font-family: "Roboto Mono", monospace;
 }
 body.theme-calm-sky pre code {
-    background-color: #cce5ff;
-    color: #2c3e50;
-    font-family: "Roboto Mono", monospace;
+    background-color: transparent;
+    color: #3a4a60;
+    font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-calm-sky a,
 body.theme-calm-sky h1 a,
@@ -339,51 +380,49 @@ body.theme-calm-sky h3 a,
 body.theme-calm-sky h4 a,
 body.theme-calm-sky h5 a,
 body.theme-calm-sky h6 a {
-    color: #1565c0;
+    color: #4a6a8a;
     text-decoration: none;
 }
 body.theme-calm-sky table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #b0cfe0;
+    border: 1px solid #d0d8e2;
 }
 body.theme-calm-sky table th,
 body.theme-calm-sky table td {
-    border: 1px solid #b0cfe0;
+    border: 1px solid #d0d8e2;
     padding: 8px 12px;
 }
 body.theme-calm-sky table tr:nth-child(even) {
-    background-color: #dfe7ee;
+    background-color: #eaf0f5;
 }
-
 /* ============================================================
-   Theme 8: boss-beige (light background)
-   Warm beige background, dark brown text
+   Theme: boss-beige
    ============================================================ */
 body.theme-boss-beige {
-    font-family: "PT Serif", serif;
-    color: #4a3c2b;
-    background-color: #f5e6d3;
+    font-family: "EB Garamond", serif;
+    color: #3a2e20;
+    background-color: #f2e8d8;
 }
 body.theme-boss-beige pre {
-    background-color: #fff8e1;
+    background-color: #e8dcc8;
     font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #d4c5a9;
+    border: 1px solid #d4c4ac;
     overflow: auto;
 }
 body.theme-boss-beige code {
-    background-color: rgba(74,60,43,0.1);
+    background-color: rgba(58,46,32,0.06);
     font-family: "Roboto Mono", monospace;
 }
 body.theme-boss-beige pre code {
-    background-color: #eae2d6;
-    color: #4a3c2b;
-    font-family: "Roboto Mono", monospace;
+    background-color: transparent;
+    color: #5a4a3a;
+    font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-boss-beige a,
 body.theme-boss-beige h1 a,
@@ -392,51 +431,49 @@ body.theme-boss-beige h3 a,
 body.theme-boss-beige h4 a,
 body.theme-boss-beige h5 a,
 body.theme-boss-beige h6 a {
-    color: #8c704f;
+    color: #7a5a3a;
     text-decoration: none;
 }
 body.theme-boss-beige table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #c9b89a;
+    border: 1px solid #d4c4ac;
 }
 body.theme-boss-beige table th,
 body.theme-boss-beige table td {
-    border: 1px solid #c9b89a;
+    border: 1px solid #d4c4ac;
     padding: 8px 12px;
 }
 body.theme-boss-beige table tr:nth-child(even) {
-    background-color: #e4d5c2;
+    background-color: #ede2d0;
 }
-
 /* ============================================================
-   Theme 9: ancient-papyrus (light background)
-   Warm parchment background, dark sepia text
+   Theme: ancient-papyrus
    ============================================================ */
 body.theme-ancient-papyrus {
     font-family: "Crimson Pro", serif;
-    color: #3b2f2f;
-    background-color: #fdf5e6;
+    color: #332820;
+    background-color: #fdf6e3;
 }
 body.theme-ancient-papyrus pre {
-    background-color: #fff9e6;
-    font-family: "Source Code Pro", monospace;
+    background-color: #f4ebd4;
+    font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #e8d9c5;
+    border: 1px solid #e0d4b8;
     overflow: auto;
 }
 body.theme-ancient-papyrus code {
-    background-color: rgba(59,47,47,0.1);
-    font-family: "Source Code Pro", monospace;
+    background-color: rgba(51,40,32,0.06);
+    font-family: "Roboto Mono", monospace;
 }
 body.theme-ancient-papyrus pre code {
-    background-color: #f5e9df;
-    color: #3b2f2f;
+    background-color: transparent;
+    color: #554433;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-ancient-papyrus a,
 body.theme-ancient-papyrus h1 a,
@@ -445,51 +482,49 @@ body.theme-ancient-papyrus h3 a,
 body.theme-ancient-papyrus h4 a,
 body.theme-ancient-papyrus h5 a,
 body.theme-ancient-papyrus h6 a {
-    color: #7a5e4f;
+    color: #8a6a4a;
     text-decoration: none;
 }
 body.theme-ancient-papyrus table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #d5c9a6;
+    border: 1px solid #e0d4b8;
 }
 body.theme-ancient-papyrus table th,
 body.theme-ancient-papyrus table td {
-    border: 1px solid #d5c9a6;
+    border: 1px solid #e0d4b8;
     padding: 8px 12px;
 }
 body.theme-ancient-papyrus table tr:nth-child(even) {
-    background-color: #ece4d5;
+    background-color: #f8f0dc;
 }
-
 /* ============================================================
-   Theme 10: cream-paper (light background)
-   Warm cream background, dark charcoal text
+   Theme: cream-paper
    ============================================================ */
 body.theme-cream-paper {
-    font-family: "Fira Sans", sans-serif;
-    color: #333333;
-    background-color: #fff9e6;
+    font-family: "Spectral", serif;
+    color: #2e2a22;
+    background-color: #f8f4e8;
 }
 body.theme-cream-paper pre {
-    background-color: #f5f0d8;
-    font-family: "Courier New", monospace;
+    background-color: #eee8d8;
+    font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #e0d5b5;
+    border: 1px solid #dcd4c0;
     overflow: auto;
 }
 body.theme-cream-paper code {
-    background-color: rgba(51,51,51,0.08);
-    font-family: "Courier New", monospace;
+    background-color: rgba(46,42,34,0.06);
+    font-family: "Roboto Mono", monospace;
 }
 body.theme-cream-paper pre code {
-    background-color: #f0e8d5;
-    color: #333333;
-    font-family: "Courier New", monospace;
+    background-color: transparent;
+    color: #4e4a42;
+    font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-cream-paper a,
 body.theme-cream-paper h1 a,
@@ -498,51 +533,49 @@ body.theme-cream-paper h3 a,
 body.theme-cream-paper h4 a,
 body.theme-cream-paper h5 a,
 body.theme-cream-paper h6 a {
-    color: #7a6e5c;
+    color: #6a5a4a;
     text-decoration: none;
 }
 body.theme-cream-paper table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #d9cbb8;
+    border: 1px solid #dcd4c0;
 }
 body.theme-cream-paper table th,
 body.theme-cream-paper table td {
-    border: 1px solid #d9cbb8;
+    border: 1px solid #dcd4c0;
     padding: 8px 12px;
 }
 body.theme-cream-paper table tr:nth-child(even) {
-    background-color: #eee8d5;
+    background-color: #f4efe0;
 }
-
 /* ============================================================
-   Theme 11: formal-note (light background)
-   Warm off-white background, near-black text
+   Theme: formal-note
    ============================================================ */
 body.theme-formal-note {
-    font-family: "Ubuntu", sans-serif;
+    font-family: "Source Serif 4", serif;
     color: #222222;
-    background-color: #f8f4e3;
+    background-color: #f5f2ea;
 }
 body.theme-formal-note pre {
-    background-color: #f0ebd7;
+    background-color: #ebe6dc;
     font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #d9c9a6;
+    border: 1px solid #d8d0c4;
     overflow: auto;
 }
 body.theme-formal-note code {
-    background-color: rgba(34,34,34,0.07);
+    background-color: rgba(34,34,34,0.05);
     font-family: "Roboto Mono", monospace;
 }
 body.theme-formal-note pre code {
-    background-color: #e5dcc2;
-    color: #222222;
-    font-family: "Roboto Mono", monospace;
+    background-color: transparent;
+    color: #444444;
+    font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-formal-note a,
 body.theme-formal-note h1 a,
@@ -551,51 +584,55 @@ body.theme-formal-note h3 a,
 body.theme-formal-note h4 a,
 body.theme-formal-note h5 a,
 body.theme-formal-note h6 a {
-    color: #555555;
+    color: #5a6a7a;
     text-decoration: none;
 }
 body.theme-formal-note table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #cfc5a5;
+    border: 1px solid #d8d0c4;
 }
 body.theme-formal-note table th,
 body.theme-formal-note table td {
-    border: 1px solid #cfc5a5;
+    border: 1px solid #d8d0c4;
     padding: 8px 12px;
 }
 body.theme-formal-note table tr:nth-child(even) {
-    background-color: #e7e3d2;
+    background-color: #f0ece2;
 }
-
 /* ============================================================
-   Theme 12: solar-flare
-   Dark blue-grey background, vivid yellow text
+   Theme: solar-flare
    ============================================================ */
 body.theme-solar-flare {
-    font-family: "Poppins", sans-serif;
-    color: #ffeb3b;
-    background-color: #263238;
+    font-family: "IBM Plex Sans", sans-serif;
+    color: #e0c97a;
+    background-color: #181c1f;
+}
+body.theme-solar-flare h1,
+body.theme-solar-flare h2 {
+    font-family: "Orbitron", sans-serif;
+    font-weight: 500;
+    color: #f0dca0;
 }
 body.theme-solar-flare pre {
-    background-color: #1e272e;
+    background-color: #22272b;
     font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #30363d;
+    border: 1px solid #3d454d;
     overflow: auto;
 }
 body.theme-solar-flare code {
-    background-color: rgba(255,235,59,0.4);
+    background-color: rgba(235,203,139,0.15);
     font-family: "Roboto Mono", monospace;
 }
 body.theme-solar-flare pre code {
-    background-color: #161c22;
-    color: #fff176;
+    background-color: transparent;
+    color: #ebcb8b;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-solar-flare a,
 body.theme-solar-flare h1 a,
@@ -604,51 +641,54 @@ body.theme-solar-flare h3 a,
 body.theme-solar-flare h4 a,
 body.theme-solar-flare h5 a,
 body.theme-solar-flare h6 a {
-    color: #fff176;
+    color: #d08770;
     text-decoration: none;
 }
 body.theme-solar-flare table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #455a64;
+    border: 1px solid #3d454d;
 }
 body.theme-solar-flare table th,
 body.theme-solar-flare table td {
-    border: 1px solid #455a64;
+    border: 1px solid #3d454d;
     padding: 8px 12px;
 }
 body.theme-solar-flare table tr:nth-child(even) {
-    background-color: #1e272e;
+    background-color: #1d2125;
 }
-
 /* ============================================================
-   Theme 13: midnight-blue
-   Very dark navy background, pale cyan text
+   Theme: midnight-blue
    ============================================================ */
 body.theme-midnight-blue {
-    font-family: "Lato", sans-serif;
-    color: #e0f7fa;
-    background-color: #0d1b2a;
+    font-family: "IBM Plex Sans", sans-serif;
+    color: #b8cce0;
+    background-color: #0c1520;
+}
+body.theme-midnight-blue h1,
+body.theme-midnight-blue h2 {
+    font-family: "Share Tech Mono", monospace;
+    color: #d0e0f0;
 }
 body.theme-midnight-blue pre {
-    background-color: #001936;
+    background-color: #142030;
     font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #30363d;
+    border: 1px solid #283d5a;
     overflow: auto;
 }
 body.theme-midnight-blue code {
-    background-color: rgba(13,27,42,0.4);
+    background-color: rgba(136,192,208,0.15);
     font-family: "Roboto Mono", monospace;
 }
 body.theme-midnight-blue pre code {
-    background-color: #021328;
-    color: #90caf9;
+    background-color: transparent;
+    color: #88c0d0;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-midnight-blue a,
 body.theme-midnight-blue h1 a,
@@ -657,51 +697,55 @@ body.theme-midnight-blue h3 a,
 body.theme-midnight-blue h4 a,
 body.theme-midnight-blue h5 a,
 body.theme-midnight-blue h6 a {
-    color: #90caf9;
+    color: #81a1c1;
     text-decoration: none;
 }
 body.theme-midnight-blue table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #1a3a5c;
+    border: 1px solid #283d5a;
 }
 body.theme-midnight-blue table th,
 body.theme-midnight-blue table td {
-    border: 1px solid #1a3a5c;
+    border: 1px solid #283d5a;
     padding: 8px 12px;
 }
 body.theme-midnight-blue table tr:nth-child(even) {
-    background-color: #0a1628;
+    background-color: #101a28;
 }
-
 /* ============================================================
-   Theme 14: emerald-foam
-   Dark forest-green background, pale green text
+   Theme: emerald-foam
    ============================================================ */
 body.theme-emerald-foam {
-    font-family: "Raleway", sans-serif;
-    color: #e8f5e9;
-    background-color: #1b5e20;
+    font-family: "IBM Plex Sans", sans-serif;
+    color: #b8d4bc;
+    background-color: #0d1a10;
+}
+body.theme-emerald-foam h1,
+body.theme-emerald-foam h2 {
+    font-family: "Orbitron", sans-serif;
+    font-weight: 500;
+    color: #d0e8d4;
 }
 body.theme-emerald-foam pre {
-    background-color: #0d6c1f;
-    font-family: "Courier New", monospace;
+    background-color: #152619;
+    font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #30363d;
+    border: 1px solid #2d4a34;
     overflow: auto;
 }
 body.theme-emerald-foam code {
-    background-color: rgba(29,87,31,0.4);
-    font-family: "Courier New", monospace;
+    background-color: rgba(163,190,140,0.15);
+    font-family: "Roboto Mono", monospace;
 }
 body.theme-emerald-foam pre code {
-    background-color: #004c11;
-    color: #81c784;
+    background-color: transparent;
+    color: #a3be8c;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-emerald-foam a,
 body.theme-emerald-foam h1 a,
@@ -710,51 +754,54 @@ body.theme-emerald-foam h3 a,
 body.theme-emerald-foam h4 a,
 body.theme-emerald-foam h5 a,
 body.theme-emerald-foam h6 a {
-    color: #81c784;
+    color: #8fbcbb;
     text-decoration: none;
 }
 body.theme-emerald-foam table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #2e7d32;
+    border: 1px solid #2d4a34;
 }
 body.theme-emerald-foam table th,
 body.theme-emerald-foam table td {
-    border: 1px solid #2e7d32;
+    border: 1px solid #2d4a34;
     padding: 8px 12px;
 }
 body.theme-emerald-foam table tr:nth-child(even) {
-    background-color: #14451a;
+    background-color: #112014;
 }
-
 /* ============================================================
-   Theme 15: lavender-mist
-   Deep purple background, pale lavender text
+   Theme: lavender-mist
    ============================================================ */
 body.theme-lavender-mist {
-    font-family: "Cormorant Garamond", serif;
-    color: #f3e5f5;
-    background-color: #4a148c;
+    font-family: "IBM Plex Sans", sans-serif;
+    color: #c8bcd8;
+    background-color: #130e1e;
+}
+body.theme-lavender-mist h1,
+body.theme-lavender-mist h2 {
+    font-family: "Share Tech Mono", monospace;
+    color: #e0d4f0;
 }
 body.theme-lavender-mist pre {
-    background-color: #311b92;
-    font-family: "Courier New", monospace;
+    background-color: #1d162d;
+    font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #30363d;
+    border: 1px solid #3a2d56;
     overflow: auto;
 }
 body.theme-lavender-mist code {
-    background-color: rgba(64,20,136,0.4);
-    font-family: "Courier New", monospace;
+    background-color: rgba(180,142,173,0.15);
+    font-family: "Roboto Mono", monospace;
 }
 body.theme-lavender-mist pre code {
-    background-color: #200c66;
-    color: #ce93d8;
+    background-color: transparent;
+    color: #b48ead;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-lavender-mist a,
 body.theme-lavender-mist h1 a,
@@ -763,51 +810,55 @@ body.theme-lavender-mist h3 a,
 body.theme-lavender-mist h4 a,
 body.theme-lavender-mist h5 a,
 body.theme-lavender-mist h6 a {
-    color: #ce93d8;
+    color: #d08770;
     text-decoration: none;
 }
 body.theme-lavender-mist table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #6a1b9a;
+    border: 1px solid #3a2d56;
 }
 body.theme-lavender-mist table th,
 body.theme-lavender-mist table td {
-    border: 1px solid #6a1b9a;
+    border: 1px solid #3a2d56;
     padding: 8px 12px;
 }
 body.theme-lavender-mist table tr:nth-child(even) {
-    background-color: #380d6e;
+    background-color: #181225;
 }
-
 /* ============================================================
-   Theme 16: saffron-sand
-   Dark blue-grey background, warm golden text
+   Theme: saffron-sand
    ============================================================ */
 body.theme-saffron-sand {
-    font-family: "Montserrat", sans-serif;
-    color: #ffd54f;
-    background-color: #263238;
+    font-family: "IBM Plex Sans", sans-serif;
+    color: #d4b87a;
+    background-color: #181410;
+}
+body.theme-saffron-sand h1,
+body.theme-saffron-sand h2 {
+    font-family: "Orbitron", sans-serif;
+    font-weight: 500;
+    color: #e8d098;
 }
 body.theme-saffron-sand pre {
-    background-color: #1e272e;
+    background-color: #241e18;
     font-family: "Roboto Mono", monospace;
     padding: 16px;
     border-radius: 6px;
-    border: 1px solid #30363d;
+    border: 1px solid #463a2e;
     overflow: auto;
 }
 body.theme-saffron-sand code {
-    background-color: rgba(255,235,59,0.4);
+    background-color: rgba(235,203,139,0.15);
     font-family: "Roboto Mono", monospace;
 }
 body.theme-saffron-sand pre code {
-    background-color: #161c22;
-    color: #ffd54f;
+    background-color: transparent;
+    color: #ebcb8b;
     font-family: "Source Code Pro", monospace;
     font-size: 85%;
-    border-radius: 6px;
+    border-radius: 0;
 }
 body.theme-saffron-sand a,
 body.theme-saffron-sand h1 a,
@@ -816,20 +867,21 @@ body.theme-saffron-sand h3 a,
 body.theme-saffron-sand h4 a,
 body.theme-saffron-sand h5 a,
 body.theme-saffron-sand h6 a {
-    color: #ffd54f;
+    color: #d08770;
     text-decoration: none;
 }
 body.theme-saffron-sand table {
     border-collapse: collapse;
     width: 100%;
     margin: 24px 0;
-    border: 1px solid #455a64;
+    border: 1px solid #463a2e;
 }
 body.theme-saffron-sand table th,
 body.theme-saffron-sand table td {
-    border: 1px solid #455a64;
+    border: 1px solid #463a2e;
     padding: 8px 12px;
 }
 body.theme-saffron-sand table tr:nth-child(even) {
-    background-color: #1e272e;
+    background-color: #1e1914;
 }
+

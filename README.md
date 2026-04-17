@@ -1,10 +1,10 @@
-# openmd
+# openmd - by Rufus Lin
 
-**Markdown viewer for humans — not AI models.**
+**Markdown viewer for humans (not AI models).**
 
 I got tired of reading raw Markdown with `less` or opening VS Code/Cursor just to see it nicely rendered. So I built **openmd**.
 
-Run `openmd *.md` (or any Markdown files) from the shell and a window pops up instantly — the shell prompt returns immediately, no blocking, no `&` needed.
+Run `openmd *.md` (or any Markdown file) from the shell and a window pops up instantly. Independent Qt window, ESC closes it. Think of it as "less" but for markdown files.
 
 ![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Platform: macOS / Linux](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey) ![PyPI version](https://img.shields.io/pypi/v/openmd)
 
@@ -18,10 +18,14 @@ X: @rufuslinjapan
 
 ## What it looks like
 
-<img src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/1.png" width="80%" alt="openmd with multiple tabs and TOC sidebar">
-<img src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/2.png" width="80%" alt="Mermaid diagram and KaTeX math rendered">
+###openmd renders markdown
+<img src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/1.jpg" width="85%" alt="openmd with multiple tabs and TOC sidebar">
 
-*(Click any image to enlarge)*
+###CSS themes (customizable)
+<img src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/2.png" width="85%" alt="CSS themes (customizable)">
+
+###Mermaid, KaTeX too!
+<img src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/3.png" width="85%" alt="Mermaid diagram and KaTeX math rendered">
 
 ---
 
@@ -39,17 +43,13 @@ openmd
 
 # Glob expansion
 openmd docs/*.md
+
+# Pipe stdio
+tail -100 x.md | openmd
+
+# on MacOS, render selected markdown
+Select text, right click, Services, "Open in openmd"
 ```
-
-### Shell function (optional, for quick access)
-
-Add to your `~/.zshrc` or `~/.bashrc`:
-
-```
-openmd() { "$HOME/lab/openmd/openmd" "$@" 2>&1 }
-```
-
-Or after installing with `pipx` or `pip`, the `openmd` command is already in your `PATH`.
 
 ### Remote preview via SSH (optional)
 
@@ -71,15 +71,16 @@ remotemd() {
 - **Instant launch** — the shell prompt returns immediately; openmd runs as a fully detached GUI app (no `&` needed, no blocking)
 - **GitHub-dark theme by default** — comfortable reading in low-light environments
 - **16 built-in themes** — dark and light, switch instantly via the swatch bar at the bottom of the sidebar; fully customizable via `.openmd.css`
-- **Live reload** — the preview updates instantly when the file is saved; no manual refresh needed
+- **Live reload** — the display pane updates instantly when the file is saved; no manual refresh needed
 - **Mermaid diagrams** — fenced mermaid blocks render automatically via CDN
 - **KaTeX math** — inline `$…$` and display `$$…$$` expressions render out of the box
 - **Sidebar TOC** — hierarchical (H1 → H2 → H3); click or press Return to jump to any heading. The sidebar takes up 20% of your screen, and you can easily jump between the sidebar and display using the left/right arrow keys.
 - **Dynamic Pane Focus** — unselected panes automatically dim to 60% opacity so you always know exactly where your keyboard focus is.
 - **Multi-file tabs** — pass multiple `.md` files (even `*.md` globs) and each opens in its own tab, max 6
+- **Unix pipes** - accepts markdown from stdin, e.g. ```echo 'markdown string here' | openmd```
 - **Interactive file picker** — run with no arguments and choose from `.md` files in the current directory via a curses-based picker
 - **Remote image caching** — remote images in your Markdown are downloaded to a local temp cache so they render correctly in the Qt WebEngine view
-- **External link handling** — clicking any `http`/`https` link opens it in your default browser; the preview window never navigates away
+- **External link handling** — clicking any `http`/`https` link opens it in your default browser; the display window never navigates away
 - **Update notifications** — on startup, openmd quietly checks PyPI (at most once every 6 hours) and shows a non-intrusive popup if a newer version is available
 - **Version in title bar** — the window title shows the running version for quick reference
 - **Keyboard shortcuts** — `Esc` closes the window; Up/Down arrows and Return navigate the sidebar, Left/Right switch panes, and Cmd+Left/Right switch tabs
@@ -88,7 +89,10 @@ remotemd() {
 
 ## Theming with `.openmd.css`
 
-openmd ships with 16 built-in themes (8 dark, 8 light) selectable from the swatch bar. To customize further, create a `.openmd.css` file — it is appended after the built-in CSS so any rule you write overrides the default via normal CSS cascade.
+**Preview:** Open ```openmd-preview-themes.html``` in a browser to see what the 16 themes look like.
+**Customization:** Copy ```openmd-default.css``` to your home directory (```$HOME/.openmd.css #note the dot```), then edit it to your liking.
+
+openmd ships with 16 built-in themes (8 dark, 8 light) selectable from the swatch bar. Automatically loaded from `openmd-default.css`. To customize further, create an `.openmd.css` file — it is appended after the built-in CSS so any rule you write overrides the default via normal CSS cascade.
 
 **Lookup order** (first match wins):
 
@@ -98,7 +102,7 @@ openmd ships with 16 built-in themes (8 dark, 8 light) selectable from the swatc
 | 2 | openmd install directory |
 | 3 | Home directory (`~/`) |
 
-To switch themes programmatically, add `body.theme-yourname { ... }` blocks to your `.openmd.css`. The swatch bar automatically discovers and displays any themes defined there.
+To make your own CSS themes, add `body.theme-yourname { ... }` blocks to your `.openmd.css`. The swatch bar automatically discovers and displays the first 16 themes defined there.
 
 ---
 
@@ -115,29 +119,22 @@ To switch themes programmatically, add `body.theme-yourname { ... }` blocks to y
 
 ---
 
-##Installation
+## Installation
 
-###macOS (recommended)
+The easiest way to install openmd (recommended, just two steps):
 
-The default python3 on macOS is still Python 3.9, which is not supported.
+1. Install **uv** (the fastest Python tool manager):
+   ```
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+*(Windows users: use the same curl command in PowerShell or run winget install astral-sh.uv)*
 
-```
-brew install pipx
-pipx install openmd
-```
+2. Install openmd: ```uv tool install openmd```
 
-After this, the openmd command will be available in your shell.
-
-###Linux
-
-```
-pip install openmd
-```
-
-After this, the openmd command will be available in your shell.
+That’s it! You can now run openmd like this:
+```openmd <filename(s)>```
 
 ###From source
-
 ```
 git clone https://github.com/RufusLin/openmd.git
 cd openmd
@@ -145,6 +142,7 @@ pip install -e .
 ```
 
 After this, the openmd command will be available in your shell.
+
 
 ---
 
