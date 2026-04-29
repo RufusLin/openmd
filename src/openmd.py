@@ -23,8 +23,8 @@
 # -------------------------------------------------
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 
-__version__ = '1.5.1'
-# "The Pipeline"
+__version__ = '1.5.2'
+# "The Seeker"
 
 import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess, threading, time, json, html, textwrap
 import urllib.request
@@ -46,7 +46,7 @@ except Exception:
 from PySide6.QtWidgets import (
     QApplication, QMainWindow, QTabWidget, QWidget, QVBoxLayout,
     QHBoxLayout, QSplitter, QTreeWidget, QTreeWidgetItem, QPushButton,
-    QDialog, QLabel, QFrame, QGraphicsOpacityEffect,
+    QDialog, QLabel, QFrame, QGraphicsOpacityEffect, QLineEdit,
 )
 from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtCore import QSize, Qt, QFileSystemWatcher, QUrl, QTimer, Signal
@@ -106,6 +106,40 @@ QTreeWidget::item:selected:!active {
     border-left: 3px solid #484f58;
 }
 QTreeWidget::item:selected:hover { background: #2d7dd2; }
+
+QLineEdit#searchBox {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    color: #c9d1d9;
+    padding: 4px 8px;
+    font-size: 13px;
+}
+QLineEdit#searchBox:focus {
+    border: 1px solid #58a6ff;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+QPushButton#searchBtn {
+    background: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    color: #c9d1d9;
+    font-size: 12px;
+    padding: 4px 8px;
+}
+QPushButton#searchBtn:hover {
+    background: #30363d;
+}
+QPushButton#searchBtn:pressed {
+    background: #161b22;
+}
+
+QLabel#tocGuidance {
+    color: #8b949e;
+    font-size: 10px;
+    margin: 10px 10px 4px 10px;
+}
 
 QPushButton#metaBtn, QPushButton#helpBtn {
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
@@ -292,6 +326,63 @@ class _SidebarTree(QTreeWidget):
     """QTreeWidget with custom navigation and expansion logic."""
     rightArrowPressed = Signal()
     focusChanged = Signal(bool)
+    focusSearchRequested = Signal()
+
+    def focusInEvent(self, event):
+        super().focusInEvent(event)
+        self.focusChanged.emit(True)
+
+    def focusOutEvent(self, event):
+        super().focusOutEvent(event)
+        self.focusChanged.emit(False)
+
+    def focusNextPrevChild(self, next_child: bool):
+        """Intercept Tab before Qt's default focus traversal swallows it."""
+        if next_child:  # Tab key pressed
+            item = self.currentItem()
+            if item:
+                self.itemClicked.emit(item, 0)
+            self.rightArrowPressed.emit()  # Move focus to doc pane
+            return True
+        return super().focusNextPrevChild(next_child)
+
+    def keyPressEvent(self, event: QKeyEvent):
+        key = event.key()
+        item = self.currentItem()
+
+        if key == Qt.Key_Space:
+            event.accept()
+            return
+        elif key == Qt.Key_Right:
+            self.rightArrowPressed.emit()
+            event.accept()
+            return
+        elif key == Qt.Key_Left:
+            event.accept()
+            return
+        elif key == Qt.Key_Up:
+            if item and item == self.topLevelItem(0):
+                self.focusSearchRequested.emit()
+                event.accept()
+                return
+            # Allow QTreeWidget to handle up naturally
+            super().keyPressEvent(event)
+            return
+        elif key == Qt.Key_Down:
+            # Allow QTreeWidget to handle down naturally
+            super().keyPressEvent(event)
+            return
+        
+        super().keyPressEvent(event)
+
+
+class _SearchLineEdit(QLineEdit):
+    """Custom QLineEdit that passes arrow keys for pane navigation."""
+    focusChanged = Signal(bool)
+
+    def __init__(self, parent_widget):
+        super().__init__()
+        self.parent_widget = parent_widget
 
     def focusInEvent(self, event):
         super().focusInEvent(event)
@@ -303,24 +394,16 @@ class _SidebarTree(QTreeWidget):
 
     def keyPressEvent(self, event: QKeyEvent):
         key = event.key()
-        item = self.currentItem()
-
-        if key in (Qt.Key_Return, Qt.Key_Enter):
-            if item:
-                self.itemClicked.emit(item, 0)
-            event.accept()
-            return
-        elif key == Qt.Key_Space:
-            event.accept()
+        if key in (Qt.Key_Up, Qt.Key_Down):
+            self.parent_widget.sidebar.setFocus()
+            QApplication.sendEvent(self.parent_widget.sidebar, event)
             return
         elif key == Qt.Key_Right:
-            self.rightArrowPressed.emit()
-            event.accept()
+            self.parent_widget._focus_view()
             return
         elif key == Qt.Key_Left:
-            event.accept()
+            self.parent_widget.sidebar.setFocus()
             return
-        
         super().keyPressEvent(event)
 
 
@@ -370,6 +453,7 @@ class FilePreviewWidget(QWidget):
         self.sidebar.setHeaderHidden(True)
         self.sidebar.setIndentation(16)
         self.sidebar.itemClicked.connect(self._jump_to_section)
+        self.sidebar.focusSearchRequested.connect(self._focus_search)
         self._populate_sidebar(toc_html)
 
         # --- Theme swatch bar at the foot of the sidebar ---
@@ -384,15 +468,49 @@ class FilePreviewWidget(QWidget):
         self.sidebar_opacity = QGraphicsOpacityEffect(self)
         self.sidebar_opacity.setOpacity(1.0)
         sidebar_col.setGraphicsEffect(self.sidebar_opacity)
-        self.sidebar.focusChanged.connect(lambda focused: self.sidebar_opacity.setOpacity(1.0 if focused else 0.6))
         
         sidebar_layout = QVBoxLayout(sidebar_col)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
         sidebar_layout.setSpacing(0)
+
+        # --- Search Row (Box + Button) ---
+        search_row = QHBoxLayout()
+        search_row.setContentsMargins(8, 6, 8, 2)
+        search_row.setSpacing(4)
+        
+        self.search_box = _SearchLineEdit(self)
+        self.search_box.setObjectName("searchBox")
+        self.search_box.setPlaceholderText("Search document...")
+        self.search_box.textChanged.connect(self._on_search_text_changed)
+        self.search_box.returnPressed.connect(self._on_search_return)
+        search_row.addWidget(self.search_box)
+        
+        self.search_btn = QPushButton("Find")
+        self.search_btn.setObjectName("searchBtn")
+        self.search_btn.setFixedHeight(26)
+        self.search_btn.clicked.connect(self._on_search_return)
+        search_row.addWidget(self.search_btn)
+        
+        sidebar_layout.addLayout(search_row)
+        
+        # Update opacity when either widget has focus
+        def _update_sidebar_opacity(_=False):
+            focused = self.sidebar.hasFocus() or self.search_box.hasFocus()
+            self.sidebar_opacity.setOpacity(1.0 if focused else 0.6)
+        self.sidebar.focusChanged.connect(_update_sidebar_opacity)
+        self.search_box.focusChanged.connect(_update_sidebar_opacity)
+
+        # --- TOC ---
         sidebar_layout.addWidget(self.sidebar)
 
+        # --- TOC Guidance (below TOC) ---
+        self.toc_guidance = QLabel("Select section and press the TAB key.")
+        self.toc_guidance.setObjectName("tocGuidance")
+        sidebar_layout.addWidget(self.toc_guidance)
+
         # --- Meta and Help buttons ---
-        self.meta_btn = QPushButton("META")
+        mod_key = "Cmd" if sys.platform == "darwin" else "Alt"
+        self.meta_btn = QPushButton(f"META ({mod_key}-M)")
         self.meta_btn.setObjectName("metaBtn")
         self.meta_btn.setFixedHeight(26)
         self.meta_btn.clicked.connect(self._toggle_meta)
@@ -823,6 +941,23 @@ class FilePreviewWidget(QWidget):
                 "try { var el = document.getElementById('" + anchor + "'); if (el) el.scrollIntoView(); } catch(e) {}"
             )
 
+    def _on_search_text_changed(self, text: str):
+        """Perform as-you-type search in the web view."""
+        # findText(text) highlights and scrolls to first match.
+        # Clearing with empty string removes highlights.
+        self.view.findText(text)
+
+    def _on_search_return(self):
+        """Find the next occurrence of the search text."""
+        text = self.search_box.text()
+        if text:
+            self.view.findText(text)
+
+    def _focus_search(self):
+        """Focus the search box and select all text."""
+        self.search_box.setFocus()
+        self.search_box.selectAll()
+
     def _toggle_meta(self):
         """Toggle visibility of the hidden meta div in the rendered page."""
         # Toggle via JavaScript: toggle both visibility and display with safety
@@ -911,6 +1046,7 @@ class FilePreviewWidget(QWidget):
         <h2>Navigation:</h2>
         <ul>
             <li><b>↑ / ↓</b> – navigate sidebar sections</li>
+            <li><b>TAB</b> – select section and jump to it</li>
             <li><b>Page Up / Page Down</b> – scroll display</li>
             <li><b>← / →</b> – move between sidebar and display</li>
             <li><b>Cmd + Shift + &lt; / &gt;</b> – change font size</li>
@@ -921,8 +1057,8 @@ class FilePreviewWidget(QWidget):
         <ul>
             <li><b>Theme Swatches</b> – click to change colors instantly</li>
             <li><b>Live Reload</b> – updates instantly when file is saved in your editor</li>
-            <li><b>Meta Panel (M)</b> – toggle YAML front-matter display</li>
-            <li><b>Help (H)</b> – this dialog</li>
+            <li><b>Cmd/Alt + F</b> – focus search box</li>
+            <li><b>Cmd/Alt + M</b> – toggle YAML front-matter display</li>
         </ul>
         <h2>Tips:</h2>
         <ul>
@@ -1116,13 +1252,17 @@ class MDPreviewWindow(QMainWindow):
         self._cfg = cfg
         self._update_popup = None
 
-        # Global shortcuts – M for meta, H for help (no text input in the app)
-        self._shortcut_meta = QShortcut(QKeySequence("M"), self)
+        mod = "Ctrl" if sys.platform == "darwin" else "Alt"
+
+        # Global shortcuts – Cmd/Alt+M for meta
+        self._shortcut_meta = QShortcut(QKeySequence(f"{mod}+M"), self)
         self._shortcut_meta.setContext(Qt.WindowShortcut)
         self._shortcut_meta.activated.connect(self._toggle_meta)
-        self._shortcut_help = QShortcut(QKeySequence("H"), self)
-        self._shortcut_help.setContext(Qt.WindowShortcut)
-        self._shortcut_help.activated.connect(self._show_help)
+        # Find shortcut
+        self._shortcut_find = QShortcut(QKeySequence(f"{mod}+F"), self)
+        self._shortcut_find.setContext(Qt.WindowShortcut)
+        self._shortcut_find.activated.connect(self._focus_search)
+        
         # Global Escape to quit
         self._shortcut_quit = QShortcut(QKeySequence(Qt.Key_Escape), self)
         self._shortcut_quit.setContext(Qt.WindowShortcut)
@@ -1188,6 +1328,14 @@ class MDPreviewWindow(QMainWindow):
         current = self.tab_widget.currentWidget()
         if hasattr(current, '_show_help'):
             current._show_help()
+
+    def _focus_search(self):
+        """Focus the search box in the active tab."""
+        if self.tab_widget.count() == 0:
+            return
+        current = self.tab_widget.currentWidget()
+        if hasattr(current, '_focus_search'):
+            current._focus_search()
 
     def _zoom_in(self):
         """Zoom in the active tab."""
