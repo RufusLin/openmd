@@ -18,6 +18,8 @@ X: @rufuslinjapan
 
 ## What it looks like
 
+<video src="https://github.com/user-attachments/assets/6b953326-2f52-4f14-9e83-e928ebc39786" width="85%" controls></video>
+
 ###openmd renders markdown
 <img src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/1.jpg" width="85%" alt="openmd with multiple tabs and TOC sidebar">
 
@@ -164,3 +166,17 @@ After this, the openmd command will be available in your shell.
 ## License
 
 MIT
+
+---
+
+### Troubleshooting
+
+**If you still see an old version after upgrading**  
+This happens if you previously installed with `pip install -e .` or plain `pip`.  
+Run this once:
+
+```bash
+rm -f ~/Library/Python/*/bin/openmd          # remove old pip executable (macOS)
+uv tool uninstall openmd
+uv tool install openmd
+```

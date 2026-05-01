@@ -23,7 +23,7 @@
 # -------------------------------------------------
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 
-__version__ = '1.5.2'
+__version__ = '1.5.3'
 # "The Seeker"
 
 import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess, threading, time, json, html, textwrap
