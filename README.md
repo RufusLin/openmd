@@ -18,7 +18,7 @@ X: @rufuslinjapan
 
 ## What it looks like
 
-<video src="https://github.com/user-attachments/assets/6b953326-2f52-4f14-9e83-e928ebc39786" width="85%" controls></video>
+<video src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/openmd-demo.mp4" width="85%" controls></video>
 
 ###openmd renders markdown
 <img src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/1.jpg" width="85%" alt="openmd with multiple tabs and TOC sidebar">
@@ -34,17 +34,25 @@ X: @rufuslinjapan
 ## Usage
 
 ```
-# Open a single file
+# Open a single file (extension optional!)
+openmd README
 openmd README.md
 
-# Open multiple files (each in its own tab)
-openmd doc1.md doc2.md doc3.md
+# Open most recently viewed file
+openmd -r
+
+# Open multiple files (each in its own tab, up to 12)
+openmd doc1 doc2.markdown doc3
 
 # No arguments — interactive picker (choose from .md files in current directory)
 openmd
 
-# Glob expansion
+# Glob expansion (works on Windows & POSIX shells)
 openmd docs/*.md
+
+# Check CLI version or help
+openmd -v
+openmd --help
 
 # Pipe stdio
 tail -100 x.md | openmd
@@ -68,6 +76,13 @@ remotemd() {
 
 ## Features
 
+- **Auto `.md` Extension & Path Resolution** — run `openmd filename` without `.md` and openmd automatically resolves `.md`, `.markdown`, `.mdown`, or `.mkd` files (with case-insensitive fallback)
+- **Local & Remote Link Navigation** — click relative links (`[Doc](./doc.md)`) or remote Markdown URLs (`https://.../file.md`) and openmd opens them directly in new tabs
+- **Re-open Last Viewed File** — run `openmd -r` (or `--recent` / `--last`) to instantly reopen your most recently viewed document
+- **Closable Multi-file Tabs (up to 12)** — open up to 12 files at once; tabs feature close buttons and `Cmd+W` / `Ctrl+W` closing shortcuts
+- **Native CLI Flags** — fast terminal stdout output for `openmd -v` / `--version` and `openmd -h` / `--help` without launching GUI windows
+- **Cross-Platform Glob Expansion** — wildcards like `openmd docs/*.md` work on Windows `cmd.exe`/PowerShell as well as POSIX shells
+- **Quick Clipboard Shortcuts** — `Cmd+Shift+C` copies absolute file path, `Cmd+Alt+C` copies document text
 - **Meta panel** — shows YAML front‑matter in a hidden-by-default div; toggle via the **META** button or the **M** shortcut key
 - **Quick Help** — access a concise help dialog with navigation and shortcuts via the **HELP** button or the **H** shortcut key
 - **Instant launch** — the shell prompt returns immediately; openmd runs as a fully detached GUI app (no `&` needed, no blocking)
@@ -78,14 +93,13 @@ remotemd() {
 - **KaTeX math** — inline `$…$` and display `$$…$$` expressions render out of the box
 - **Sidebar TOC** — hierarchical (H1 → H2 → H3); click or press Return to jump to any heading. The sidebar takes up 20% of your screen, and you can easily jump between the sidebar and display using the left/right arrow keys.
 - **Dynamic Pane Focus** — unselected panes automatically dim to 60% opacity so you always know exactly where your keyboard focus is.
-- **Multi-file tabs** — pass multiple `.md` files (even `*.md` globs) and each opens in its own tab, max 6
 - **Unix pipes** - accepts markdown from stdin, e.g. ```echo 'markdown string here' | openmd```
 - **Interactive file picker** — run with no arguments and choose from `.md` files in the current directory via a curses-based picker
 - **Remote image caching** — remote images in your Markdown are downloaded to a local temp cache so they render correctly in the Qt WebEngine view
-- **External link handling** — clicking any `http`/`https` link opens it in your default browser; the display window never navigates away
+- **External link handling** — clicking general `http`/`https` web links opens them in your default browser; the display window never navigates away
 - **Update notifications** — on startup, openmd quietly checks PyPI (at most once every 6 hours) and shows a non-intrusive popup if a newer version is available
 - **Version in title bar** — the window title shows the running version for quick reference
-- **Keyboard shortcuts** — `Esc` closes the window; Up/Down arrows and Return navigate the sidebar, Left/Right switch panes, and Cmd+Left/Right switch tabs
+- **Keyboard shortcuts** — `Esc` closes the window; Up/Down arrows and Return navigate the sidebar, Left/Right switch panes, Cmd+Left/Right switch tabs, Cmd+W closes tabs, and Cmd+Shift+C copies paths
 
 ---
 
@@ -156,6 +170,9 @@ After this, the openmd command will be available in your shell.
 | `↑` / `↓` | Navigate the sidebar TOC |
 | `←` / `→` | Move focus between sidebar and display |
 | `Cmd + ← / →` | Navigate among tabs |
+| `Cmd + W` | Close current active tab |
+| `Cmd + Shift + C` | Copy active file path to clipboard |
+| `Cmd + Alt + C` | Copy active document text to clipboard |
 | `Cmd + Shift + < / >` | Change font size |
 | `Return` | Jump to selected heading |
 | `M` | Toggle Meta Panel (YAML front-matter) |

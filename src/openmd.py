@@ -23,7 +23,7 @@
 # -------------------------------------------------
 # Tabs are intentionally preserved — DO NOT remove the QTabWidget multi-file tab view.
 
-__version__ = '1.5.3'
+__version__ = '1.6.0'
 # "The Seeker"
 
 import sys, os, re, markdown, configparser, hashlib, tempfile, subprocess, threading, time, json, html, textwrap
@@ -263,25 +263,57 @@ def _set_saved_theme(cfg: configparser.ConfigParser, theme: str):
     _save_config(cfg)
 
 
-class _OpenMDPage(QWebEnginePage):
-    """Custom QWebEnginePage that opens http/https links in the system browser.
+def _get_last_file(cfg: configparser.ConfigParser) -> str:
+    if cfg.has_section('history'):
+        return cfg.get('history', 'last_file', fallback='')
+    return ''
 
-    Any navigation to an external URL (http/https) is intercepted and handed
-    off to QDesktopServices.openUrl() so it opens in the user's default browser.
-    The Qt window itself never navigates away from the rendered markdown.
-    All other schemes (data:, file:, about:) are allowed through normally.
+
+def _save_last_file(cfg: configparser.ConfigParser, file_path: str):
+    if not cfg.has_section('history'):
+        cfg.add_section('history')
+    cfg.set('history', 'last_file', os.path.abspath(file_path))
+    _save_config(cfg)
+
+
+class _OpenMDPage(QWebEnginePage):
+    """Custom QWebEnginePage that opens links in system browser or new openmd tabs.
+
+    Intercepts navigation requests: local files and remote .md files are opened
+    in openmd tabs, while general web pages (http/https) are opened in the default browser.
     """
     focusSidebarRequested = Signal()
+    openFileRequested = Signal(str)
+
+    def __init__(self, parent=None, current_file_path: str = ""):
+        super().__init__(parent)
+        self.current_file_path = current_file_path
 
     def acceptNavigationRequest(self, url, nav_type, is_main_frame):
         scheme = url.scheme()
-        if scheme in ('http', 'https'):
-            try:
-                QDesktopServices.openUrl(url)
-            except Exception:
-                pass
-            return False  # block in-window navigation regardless
-        return True  # allow file://, data:, about:blank, anchor jumps, etc.
+        url_str = url.toString()
+
+        if nav_type == QWebEnginePage.NavigationTypeLinkClicked or (is_main_frame and scheme in ('http', 'https', 'file')):
+            if scheme in ('http', 'https'):
+                path_lower = url.path().lower()
+                if path_lower.endswith(MD_EXTENSIONS):
+                    self.openFileRequested.emit(url_str)
+                    return False
+                else:
+                    try:
+                        QDesktopServices.openUrl(url)
+                    except Exception:
+                        pass
+                    return False
+            elif scheme == 'file':
+                local_path = url.toLocalFile()
+                if url.hasFragment() and self.current_file_path and os.path.abspath(local_path) == os.path.abspath(self.current_file_path):
+                    return True
+                if local_path:
+                    resolved = resolve_file_path(local_path) or local_path
+                    self.openFileRequested.emit(resolved)
+                    return False
+        return True
 
     def javaScriptConsoleMessage(self, level, message, line, source):
         if "FOCUS_SIDEBAR" in message:
@@ -417,8 +449,10 @@ class _SearchLineEdit(QLineEdit):
 
 class FilePreviewWidget(QWidget):
     """A single-file preview pane: left sidebar TOC + right HTML view."""
+    openFileRequested = Signal(str)
 
     def __init__(self, file_path: str, shared_config: configparser.ConfigParser):
+
         super().__init__()
         self.file_path = file_path
         self.cfg = shared_config
@@ -534,8 +568,9 @@ class FilePreviewWidget(QWidget):
         self.view = QWebEngineView()
         self.view.setStyleSheet(VIEW_CSS)
         
-        page = _OpenMDPage(self.view)
+        page = _OpenMDPage(self.view, current_file_path=file_path)
         page.focusSidebarRequested.connect(self.sidebar.setFocus)
+        page.openFileRequested.connect(self.openFileRequested.emit)
         self.view.setPage(page)  # intercept external links
         
         # Allow local file:// pages to load remote https:// images and
@@ -717,7 +752,17 @@ class FilePreviewWidget(QWidget):
         return html_body, toc_html
 
     def _render_markdown(self, file_path: str):
-        """Read a markdown file from disk and render it; return (html_body, toc_html)."""
+        """Read a markdown file from disk or URL and render it; return (html_body, toc_html)."""
+        if file_path.startswith(('http://', 'https://')):
+            try:
+                req = urllib.request.Request(file_path, headers={'User-Agent': f'openmd/{__version__}'})
+                with urllib.request.urlopen(req, timeout=10) as resp:
+                    md_text = resp.read().decode('utf-8', errors='replace')
+            except Exception as e:
+                self._meta_html = ""
+                return f"<pre>Error fetching remote URL ({file_path}): {e}</pre>", ""
+            return self._render_markdown_core(md_text)
+
         try:
             with open(file_path, 'r', encoding='utf-8') as fh:
                 md_text = fh.read()
@@ -1050,18 +1095,23 @@ class FilePreviewWidget(QWidget):
             <li><b>Page Up / Page Down</b> – scroll display</li>
             <li><b>← / →</b> – move between sidebar and display</li>
             <li><b>Cmd + Shift + &lt; / &gt;</b> – change font size</li>
-            <li><b>Cmd + ← / →</b> – navigate among tabs</li>
-            <li><b>ESC</b> – close markdown file</li>
+            <li><b>Cmd + ← / →</b> – navigate among tabs (up to 12)</li>
+            <li><b>Cmd + W</b> – close current active tab</li>
+            <li><b>ESC</b> – close preview window</li>
         </ul>
         <h2>UI & Features:</h2>
         <ul>
             <li><b>Theme Swatches</b> – click to change colors instantly</li>
             <li><b>Live Reload</b> – updates instantly when file is saved in your editor</li>
-            <li><b>Cmd/Alt + F</b> – focus search box</li>
-            <li><b>Cmd/Alt + M</b> – toggle YAML front-matter display</li>
+            <li><b>Cmd + F</b> – focus search box</li>
+            <li><b>Cmd + M</b> – toggle YAML front-matter display</li>
+            <li><b>Cmd + Shift + C</b> – copy active file path to clipboard</li>
+            <li><b>Cmd + Alt + C</b> – copy active document text to clipboard</li>
+            <li><b>Relative/Remote Links</b> – click .md links to open in new tabs</li>
         </ul>
         <h2>Tips:</h2>
         <ul>
+            <li><b>CLI:</b> <code>openmd README</code> (auto .md), <code>openmd -r</code> (reopen last file)</li>
             <li><b>macOS:</b> select markdown in other apps, right click and use Services/Open in openmd</li>
             <li><b>Themes:</b> edit .openmd.css to make your own themes</li>
         </ul>
@@ -1295,9 +1345,123 @@ class MDPreviewWindow(QMainWindow):
         self._shortcut_next_tab.setContext(Qt.WindowShortcut)
         self._shortcut_next_tab.activated.connect(self._next_tab)
 
+        # Tab close shortcut (Cmd+W / Ctrl+W)
+        self._shortcut_close_tab = QShortcut(QKeySequence("Ctrl+W"), self)
+        self._shortcut_close_tab.setContext(Qt.WindowShortcut)
+        self._shortcut_close_tab.activated.connect(self._close_active_tab)
+
+        # Copy shortcuts
+        self._shortcut_copy_path = QShortcut(QKeySequence("Ctrl+Shift+C"), self)
+        self._shortcut_copy_path.setContext(Qt.WindowShortcut)
+        self._shortcut_copy_path.activated.connect(self._copy_current_path)
+
+        self._shortcut_copy_text = QShortcut(QKeySequence("Ctrl+Alt+C"), self)
+        self._shortcut_copy_text.setContext(Qt.WindowShortcut)
+        self._shortcut_copy_text.activated.connect(self._copy_current_text)
+
+        # Tab close setup
+        self.tab_widget.setTabsClosable(True)
+        self.tab_widget.tabCloseRequested.connect(self._close_tab)
+        self.tab_widget.currentChanged.connect(self._on_tab_changed)
+
+        # Connect initial tabs' openFileRequested signals
+        for i in range(self.tab_widget.count()):
+            w = self.tab_widget.widget(i)
+            if hasattr(w, 'openFileRequested'):
+                w.openFileRequested.connect(self.open_tab)
+
         # Kick off update check in background after a short delay so the
         # window has time to appear before any popup is shown.
         QTimer.singleShot(3000, self._start_update_check)
+
+    def _on_tab_changed(self, index: int):
+        if index >= 0:
+            widget = self.tab_widget.widget(index)
+            if widget and hasattr(widget, 'file_path') and os.path.isfile(widget.file_path):
+                _save_last_file(self._cfg, widget.file_path)
+
+    def _close_active_tab(self):
+        idx = self.tab_widget.currentIndex()
+        if idx >= 0:
+            self._close_tab(idx)
+
+    def _close_tab(self, index: int):
+        if index < 0 or index >= self.tab_widget.count():
+            return
+        widget = self.tab_widget.widget(index)
+        self.tab_widget.removeTab(index)
+        if widget:
+            widget.deleteLater()
+        if self.tab_widget.count() == 0:
+            QApplication.quit()
+
+    def _copy_current_path(self):
+        current = self.tab_widget.currentWidget()
+        if current and hasattr(current, 'file_path'):
+            path = os.path.abspath(current.file_path) if not current.file_path.startswith(('http://', 'https://')) else current.file_path
+            QApplication.clipboard().setText(path)
+            self.statusBar().showMessage(f"Copied file path to clipboard: {path}", 3000)
+
+    def _copy_current_text(self):
+        current = self.tab_widget.currentWidget()
+        if current and hasattr(current, 'file_path'):
+            fp = current.file_path
+            text = ""
+            if fp.startswith(('http://', 'https://')):
+                try:
+                    req = urllib.request.Request(fp, headers={'User-Agent': f'openmd/{__version__}'})
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        text = resp.read().decode('utf-8', errors='replace')
+                except Exception:
+                    pass
+            else:
+                try:
+                    with open(fp, 'r', encoding='utf-8') as f:
+                        text = f.read()
+                except Exception:
+                    pass
+            if text:
+                QApplication.clipboard().setText(text)
+                self.statusBar().showMessage("Copied document text to clipboard", 3000)
+
+    def open_tab(self, path_or_url: str):
+        """Open path or URL in a tab. If already open, switch to tab. If count >= 12, replace active tab."""
+        is_remote = path_or_url.startswith(('http://', 'https://'))
+        target = path_or_url if is_remote else (resolve_file_path(path_or_url) or path_or_url)
+        if not is_remote and not os.path.exists(target):
+            return
+
+        # Switch to tab if already open
+        for i in range(self.tab_widget.count()):
+            w = self.tab_widget.widget(i)
+            if hasattr(w, 'file_path'):
+                if is_remote and w.file_path == target:
+                    self.tab_widget.setCurrentIndex(i)
+                    return
+                elif not is_remote and os.path.exists(w.file_path) and os.path.abspath(w.file_path) == os.path.abspath(target):
+                    self.tab_widget.setCurrentIndex(i)
+                    return
+
+        count = self.tab_widget.count()
+        label = os.path.basename(target) if not is_remote else (target.split('/')[-1] or 'remote')
+        if count < 12:
+            new_widget = FilePreviewWidget(target, self._cfg)
+            new_widget.openFileRequested.connect(self.open_tab)
+            idx = self.tab_widget.addTab(new_widget, label)
+            self.tab_widget.setCurrentIndex(idx)
+        else:
+            current_idx = self.tab_widget.currentIndex()
+            if current_idx >= 0:
+                new_widget = FilePreviewWidget(target, self._cfg)
+                new_widget.openFileRequested.connect(self.open_tab)
+                old_widget = self.tab_widget.widget(current_idx)
+                self.tab_widget.removeTab(current_idx)
+                self.tab_widget.insertTab(current_idx, new_widget, label)
+                self.tab_widget.setCurrentIndex(current_idx)
+                if old_widget:
+                    old_widget.deleteLater()
+                self.statusBar().showMessage("Max 12 tabs reached — opened in current tab", 4000)
+
 
     def _prev_tab(self):
         """Switch to the previous tab with wraparound."""
@@ -1380,8 +1544,43 @@ class MDPreviewWindow(QMainWindow):
 # Helpers
 # ---------------------------------------------------------------------------
 
+MD_EXTENSIONS = ('.md', '.markdown', '.mdown', '.mkd')
+
+
 def is_markdown(path: str) -> bool:
-    return path.lower().endswith('.md')
+    return path.lower().endswith(MD_EXTENSIONS)
+
+
+def resolve_file_path(target: str) -> str | None:
+    """Resolve target path, auto-appending .md or checking extensions & case-insensitive matches."""
+    if not target or target.startswith(('http://', 'https://')):
+        return None
+    if os.path.isfile(target):
+        return target
+    for ext in MD_EXTENSIONS:
+        candidate = target + ext
+        if os.path.isfile(candidate):
+            return candidate
+    dirname, filename = os.path.split(target)
+    search_dir = dirname if dirname else '.'
+    if os.path.isdir(search_dir):
+        target_lower = filename.lower()
+        try:
+            entries = os.listdir(search_dir)
+            for entry in entries:
+                full_entry = os.path.join(dirname, entry) if dirname else entry
+                if not os.path.isfile(full_entry):
+                    continue
+                entry_lower = entry.lower()
+                if entry_lower == target_lower:
+                    return full_entry
+                for ext in MD_EXTENSIONS:
+                    if entry_lower == target_lower + ext:
+                        return full_entry
+        except OSError:
+            pass
+    return None
+
 
 
 def pick_file_curses() -> str:
@@ -1631,8 +1830,29 @@ nohup "{executable_path}" "$temp_file" &gt;/dev/null 2&gt;&amp;1</string>
 
 def main():
     """Entry point — used both by direct invocation and by the pip console script."""
+    args = sys.argv[1:]
+
+    # Early check for CLI flags (-v / --version / -h / --help)
+    if any(arg in ('-v', '--version') for arg in args):
+        print(f"openmd {__version__}")
+        sys.exit(0)
+
+    if any(arg in ('-h', '--help') for arg in args):
+        print(f"openmd {__version__} - Fast popup Markdown viewer")
+        print("\nUsage:")
+        print("  openmd <file_or_pattern>...   Open markdown file(s) or glob pattern(s)")
+        print("  openmd -r | --recent | --last Open the most recently viewed markdown file")
+        print("  openmd -v | --version         Print version information and exit")
+        print("  openmd -h | --help            Print this help message and exit")
+        print("  cat note.md | openmd          Preview markdown piped from stdin")
+        print("\nFeatures: sidebar TOC, live reload, search, multi-file tabs (up to 12),")
+        print("          custom CSS themes, mermaid diagrams, KaTeX math, obsidian YAML.")
+        sys.exit(0)
+
     # Ensure macOS service is installed first
     _ensure_macos_service()
+
+    cfg = _load_config()
 
     # Determine files to open
     _stdin_temp = None
@@ -1648,17 +1868,46 @@ def main():
         _tf.close()
         _stdin_temp = _tf.name
         md_files = [_stdin_temp]
-    elif len(sys.argv) < 2:
+    elif any(arg in ('-r', '--recent', '--last') for arg in args):
+        last_file = _get_last_file(cfg)
+        if last_file and os.path.isfile(last_file):
+            md_files = [last_file]
+        else:
+            sys.exit("Error: No recent valid file found in history.")
+    elif len(args) == 0:
         file_path = pick_file_curses()
         md_files = [file_path]
     else:
-        files = sys.argv[1:]
-        md_files = [f for f in files if is_markdown(f)]
-        if not md_files:
-            sys.exit("No markdown files matched the given pattern(s).")
-        if len(md_files) > 6:
-            sys.stderr.write("Warning: more than 6 files supplied; showing first 6.\n")
-            md_files = md_files[:6]
+        pos_args = [a for a in args if not a.startswith('-')]
+        if not pos_args:
+            file_path = pick_file_curses()
+            md_files = [file_path]
+        else:
+            import glob
+            expanded = []
+            for arg in pos_args:
+                matches = glob.glob(arg, recursive=True)
+                if matches:
+                    expanded.extend(matches)
+                else:
+                    expanded.append(arg)
+
+            md_files = []
+            for f in expanded:
+                resolved = resolve_file_path(f)
+                if resolved and resolved not in md_files:
+                    md_files.append(resolved)
+
+            if not md_files:
+                sys.exit("No markdown files matched the given pattern(s).")
+            if len(md_files) > 12:
+                sys.stderr.write("Warning: more than 12 files supplied; showing first 12.\n")
+                md_files = md_files[:12]
+
+    # Save last viewed file in config history
+    if md_files and os.path.isfile(md_files[0]):
+        _save_last_file(cfg, md_files[0])
+
 
     # Re-exec as a detached child if needed
     if sys.platform != 'win32' and os.environ.get('_OPENMD_CHILD') != '1':
