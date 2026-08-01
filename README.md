@@ -18,7 +18,7 @@ X: @rufuslinjapan
 
 ## What it looks like
 
-https://github.com/user-attachments/assets/42f0b30d-5d7a-4e61-98c6-c3354ad10e16
+<video src="https://github.com/user-attachments/assets/42f0b30d-5d7a-4e61-98c6-c3354ad10e16" width="85%" controls></video>
 
 ###openmd renders markdown
 <img src="https://raw.githubusercontent.com/RufusLin/openmd/main/pix/1.jpg" width="85%" alt="openmd with multiple tabs and TOC sidebar">
