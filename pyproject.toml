@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmd"
-version = "1.6.0"
+version = "1.6.1"
 description = "Fast popup Markdown viewer with sidebar TOC, search, multi-file tabs, css themes, mermaid, katex, obsidian yaml show/hide, keyboard-based, stdio pipes"
 readme = "README.md"
 license = { text = "MIT" }
@@ -44,6 +44,7 @@ Issues = "https://github.com/RufusLin/openmd/issues"
 package-dir = {"" = "src"}
 py-modules = ["openmd"]
 
-[tool.setuptools.package-data]
-"*" = ["*.css"]
+[tool.setuptools.data-files]
+"share/openmd" = ["src/openmd-default.css"]
+
 

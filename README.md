@@ -107,9 +107,9 @@ remotemd() {
 ## Theming with `.openmd.css`
 
 **Preview:** Open ```openmd-preview-themes.html``` in a browser to see what the 16 themes look like.
-**Customization:** Copy ```openmd-default.css``` to your home directory (```$HOME/.openmd.css #note the dot```), then edit it to your liking.
+**Customization:** On first launch, openmd automatically populates your home directory with the default CSS (```$HOME/.openmd.css #note the dot```). Edit this file to customize your themes.
 
-openmd ships with 16 built-in themes (8 dark, 8 light) selectable from the swatch bar. Automatically loaded from `openmd-default.css`. To customize further, create an `.openmd.css` file — it is appended after the built-in CSS so any rule you write overrides the default via normal CSS cascade.
+openmd ships with 16 built-in themes (8 dark, 8 light) selectable from the swatch bar. On first run, default theme CSS is auto-seeded to `$HOME/.openmd.css`. To customize further, edit `.openmd.css` — any rule you write overrides or extends the defaults via normal CSS cascade.
 
 **Lookup order** (first match wins):
 
@@ -118,6 +118,7 @@ openmd ships with 16 built-in themes (8 dark, 8 light) selectable from the swatc
 | 1 | Current working directory (`./`) |
 | 2 | openmd install directory |
 | 3 | Home directory (`~/`) |
+| 4 | Bundled default theme CSS |
 
 To make your own CSS themes, add `body.theme-yourname { ... }` blocks to your `.openmd.css`. The swatch bar automatically discovers and displays the first 16 themes defined there.
 
